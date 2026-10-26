@@ -1,65 +1,101 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
+import AppFrame from '@/components/shared/AppFrame';
 
-// --- AUTH PAGES ---
 import Login from '@/pages/auth/Login';
 import Signup from '@/pages/auth/Signup';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
 import CompleteRegistration from '@/pages/auth/CompleteRegistration';
 import SelectRole from '@/pages/auth/SelectRole';
 
-// --- DEV A PAGES (The ones you just built) ---
 import WorkerProfile from '@/pages/worker/Profile';
 import SearchWorkers from '@/pages/employer/SearchWorkers';
 import PublicProfile from '@/pages/shared/PublicProfile';
 
-// --- OTHER PLACEHOLDER PAGES (Import these as you build them) ---
-// import WorkerDashboard from '@/pages/worker/Dashboard';
-// import EmployerDashboard from '@/pages/employer/Dashboard';
+const EmployerDashboard = lazy(() => import('@/pages/employer/Dashboard'));
+const NewJob = lazy(() => import('@/pages/employer/NewJob'));
+
+const TrainerDashboard = lazy(() => import('@/pages/trainer/Dashboard'));
+const TrainerProfile = lazy(() => import('@/pages/trainer/TrainerProfile'));
+const CreateListing = lazy(() => import('@/pages/trainer/CreateListing'));
+
+const ApprenticeListings = lazy(() => import('@/pages/apprentice/Listings'));
+const Apply = lazy(() => import('@/pages/apprentice/Apply'));
+const MyApplications = lazy(() => import('@/pages/apprentice/MyApplications'));
 
 export const router = createBrowserRouter([
-  // 1. Default Route: Redirect to login
-  { 
-    path: '/', 
-    element: <Navigate to="/auth/login" replace /> 
+  {
+    path: '/',
+    element: <Navigate to="/auth/login" replace />,
   },
 
-  // 2. Public Auth Routes
   { path: '/auth/login', element: <Login /> },
   { path: '/auth/signup', element: <Signup /> },
   { path: '/auth/register/verify', element: <RegisterVerify /> },
   { path: '/auth/register/complete', element: <CompleteRegistration /> },
   { path: '/auth/select-role', element: <SelectRole /> },
 
-  // 3. Public Profile (Employers need to see this without a specific role lock)
   { path: '/profile/:id', element: <PublicProfile /> },
 
-  // 4. Protected Routes (Must be logged in)
   {
-    element: <ProtectedRoute />, // Wrapper component checking for token
+    element: <ProtectedRoute />,
     children: [
-      // Worker Routes
       {
         path: '/worker',
         element: <ProtectedRoute role="worker" />,
         children: [
           { path: 'profile', element: <WorkerProfile /> },
-          // { path: 'dashboard', element: <WorkerDashboard /> },
         ],
       },
-      
-      // Employer Routes
+
       {
         path: '/employer',
         element: <ProtectedRoute role="employer" />,
         children: [
-          { path: 'search', element: <SearchWorkers /> },
-          // { path: 'dashboard', element: <EmployerDashboard /> },
+          {
+            element: <AppFrame />,
+            children: [
+              { path: 'search', element: <SearchWorkers /> },
+              { path: 'dashboard', element: <EmployerDashboard /> },
+              { path: 'jobs/new', element: <NewJob /> },
+            ],
+          },
+        ],
+      },
+
+      {
+        path: '/trainer',
+        element: <ProtectedRoute role="worker" />,
+        children: [
+          {
+            element: <AppFrame />,
+            children: [
+              { path: 'dashboard', element: <TrainerDashboard /> },
+              { path: 'profile', element: <TrainerProfile /> },
+              { path: 'listings/new', element: <CreateListing /> },
+            ],
+          },
+        ],
+      },
+
+      {
+        path: '/apprentice',
+        element: <ProtectedRoute role="apprentice" />,
+        children: [
+          {
+            element: <AppFrame />,
+            children: [
+              { path: 'dashboard', element: <Navigate to="/apprentice/listings" replace /> },
+              { path: 'listings', element: <ApprenticeListings /> },
+              { path: 'listings/:id/apply', element: <Apply /> },
+              { path: 'applications', element: <MyApplications /> },
+            ],
+          },
         ],
       },
     ],
   },
 
-  // 5. Catch-all for 404s
   { path: '*', element: <div className="p-8 text-center text-red-500">404 - Page Not Found</div> },
 ]);

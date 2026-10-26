@@ -1,0 +1,48 @@
+export const jobs = [
+  {
+    id: 'job-1',
+    employerId: 'employer-1',
+    title: 'Fix leaking kitchen pipe',
+    description: 'The pipe under the kitchen sink leaks and needs to be replaced.',
+    trade: 'Plumber',
+    location: 'Lagos',
+    budget: 25000,
+    urgency: 'urgent',
+    status: 'open',
+    createdAt: '2026-10-20T09:00:00.000Z',
+    applicants: [
+      { id: 'worker-1', name: 'Emeka Obi', trade: 'Plumber', location: 'Lagos' },
+      { id: 'worker-2', name: 'Tunde Bello', trade: 'Plumber', location: 'Lagos' },
+    ],
+  },
+  {
+    id: 'job-2',
+    employerId: 'employer-1',
+    title: 'Rewire living room sockets',
+    description: 'Four sockets in the living room need new wiring and fittings.',
+    trade: 'Electrician',
+    location: 'Ikeja',
+    budget: 40000,
+    urgency: 'normal',
+    status: 'open',
+    createdAt: '2026-10-21T11:30:00.000Z',
+    applicants: [
+      { id: 'worker-3', name: 'Samuel Adeyemi', trade: 'Electrician', location: 'Ikeja' },
+    ],
+  },
+  {
+    id: 'job-3',
+    employerId: 'employer-1',
+    title: 'Build wardrobe for bedroom',
+    description: 'Built-in wardrobe, about two metres wide, with sliding doors.',
+    trade: 'Carpenter',
+    location: 'Lekki',
+    budget: null,
+    urgency: 'low',
+    status: 'filled',
+    createdAt: '2026-10-15T14:00:00.000Z',
+    applicants: [
+      { id: 'worker-4', name: 'Chidi Nwosu', trade: 'Carpenter', location: 'Lekki' },
+    ],
+  },
+];

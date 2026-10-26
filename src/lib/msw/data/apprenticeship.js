@@ -1,0 +1,78 @@
+export const listings = [
+  {
+    id: 'listing-1',
+    trainerId: 'trainer-1',
+    trainerName: 'Demo Trainer',
+    trade: 'Electrician',
+    location: 'Lagos',
+    duration: '6 months',
+    requirements: 'Must be 18 or older and willing to learn on site.',
+    status: 'open',
+    createdAt: '2026-10-18T08:00:00.000Z',
+  },
+  {
+    id: 'listing-2',
+    trainerId: 'trainer-2',
+    trainerName: 'Mama Bisi',
+    trade: 'Tailor',
+    location: 'Ikeja',
+    duration: '3 months',
+    requirements: 'Basic sewing knowledge is helpful but not required.',
+    status: 'open',
+    createdAt: '2026-10-19T10:00:00.000Z',
+  },
+  {
+    id: 'listing-3',
+    trainerId: 'trainer-1',
+    trainerName: 'Demo Trainer',
+    trade: 'Electrician',
+    location: 'Surulere',
+    duration: '3 months',
+    requirements: 'Available weekdays from 8am.',
+    status: 'open',
+    createdAt: '2026-10-22T12:00:00.000Z',
+  },
+];
+
+export const applications = [
+  {
+    id: 'app-1',
+    listingId: 'listing-1',
+    apprenticeId: 'apprentice-2',
+    apprenticeName: 'Daniel Okoro',
+    apprenticePhone: '+2348011112222',
+    whyInterested: 'I want to learn a trade that always has work.',
+    availability: 'Full time',
+    status: 'pending',
+    createdAt: '2026-10-21T09:00:00.000Z',
+  },
+  {
+    id: 'app-2',
+    listingId: 'listing-1',
+    apprenticeId: 'apprentice-3',
+    apprenticeName: 'Ifeanyi Eze',
+    apprenticePhone: '+2348033334444',
+    whyInterested: 'I have helped my uncle with wiring and want proper training.',
+    availability: 'Weekdays only',
+    status: 'pending',
+    createdAt: '2026-10-22T15:00:00.000Z',
+  },
+  {
+    id: 'app-3',
+    listingId: 'listing-2',
+    apprenticeId: 'apprentice-1',
+    apprenticeName: 'Demo Apprentice',
+    apprenticePhone: '+2348000000012',
+    whyInterested: 'I love fashion and want to start my own business.',
+    availability: 'Weekends',
+    status: 'pending',
+    createdAt: '2026-10-23T13:00:00.000Z',
+  },
+];
+
+export const trainerProfile = {
+  trade: 'Electrician',
+  yearsOfTraining: 6,
+  apprenticesTrained: 12,
+  bio: 'Electrician with eight years on site, now training the next set of apprentices.',
+};
