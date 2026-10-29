@@ -8,18 +8,28 @@ export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [credential, setCredential] = useState('');
   const navigate = useNavigate();
-  const setUser = useAuthStore((s) => s.setUser);
+  
+  // We need setAuth to save both access and refresh tokens
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
-    mutationFn: () => authApi.startLogin({ identifier, password: credential }),
+    mutationFn: () => authApi.login({ identifier, password: credential }),
     onSuccess: (res) => {
-      // Depending on backend response, it might return an OTP token or just a success message
-      // We navigate to the OTP verify screen
-      localStorage.setItem('login_phone', identifier);
-      navigate('/auth/login/verify');
+      // Backend returns tokens and user object directly
+      const { access_token, refresh_token, user } = res.data;
+      
+      // Save to Zustand store
+      setAuth(access_token, refresh_token, user);
+      
+      // Redirect based on role
+      if (!user.role) {
+        navigate('/auth/select-role');
+      } else {
+        navigate(`/${user.role}/dashboard`);
+      }
     },
     onError: (err) => {
-      alert(err.response?.data?.error?.message || 'Login failed');
+      alert(err.response?.data?.error?.message || 'Invalid credentials');
     }
   });
 
@@ -49,7 +59,7 @@ export default function Login() {
           disabled={loginMutation.isPending}
           className="w-full rounded bg-teal-600 py-2 text-white hover:bg-teal-700 disabled:opacity-50"
         >
-          {loginMutation.isPending ? 'Sending OTP...' : 'Login'}
+          {loginMutation.isPending ? 'Logging in...' : 'Login'}
         </button>
       </div>
     </div>

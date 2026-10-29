@@ -4,16 +4,19 @@ import { persist } from 'zustand/middleware';
 export const useAuthStore = create(
   persist(
     (set) => ({
-      token: null,
+      accessToken: null,
+      refreshToken: null,
       user: null,
-      setAuth: (token, user) => {
-        localStorage.setItem('token', token);
-        set({ token, user });
+      setAuth: (access, refresh, user) => {
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+        set({ accessToken: access, refreshToken: refresh, user });
       },
       setUser: (user) => set({ user }),
       logout: () => {
-        localStorage.removeItem('token');
-        set({ token: null, user: null });
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        set({ accessToken: null, refreshToken: null, user: null });
       },
     }),
     { name: 'skillpadi-auth' }
