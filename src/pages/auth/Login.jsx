@@ -8,20 +8,16 @@ export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [credential, setCredential] = useState('');
   const navigate = useNavigate();
-  
-  // We need setAuth to save both access and refresh tokens
+
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login({ identifier, password: credential }),
     onSuccess: (res) => {
-      // Backend returns tokens and user object directly
       const { access_token, refresh_token, user } = res.data;
-      
-      // Save to Zustand store
+
       setAuth(access_token, refresh_token, user);
-      
-      // Redirect based on role
+
       if (!user.role) {
         navigate('/auth/select-role');
       } else {

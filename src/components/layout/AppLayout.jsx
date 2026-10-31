@@ -55,10 +55,36 @@ export default function AppLayout() {
           </nav>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6">
+        {/* Main Content Area (Added pb-20 for mobile nav spacing) */}
+        <main className="flex-1 p-6 pb-20 md:pb-6">
           <Outlet />
         </main>
+      </div>
+
+      {/* Mobile Bottom Navigation (Only shows on small screens) */}
+      <div className="fixed bottom-0 w-full bg-white border-t md:hidden flex justify-around p-3 z-50">
+        <Link to={`/${user?.role}/dashboard`} className="text-gray-600 flex flex-col items-center text-xs hover:text-teal-600">
+          <Home size={20} className="mb-1" /> Home
+        </Link>
+        {isWorker ? (
+          <>
+            <Link to="/worker/profile" className="text-gray-600 flex flex-col items-center text-xs hover:text-teal-600">
+              <User size={20} className="mb-1" /> Profile
+            </Link>
+            <Link to="/worker/jobs" className="text-gray-600 flex flex-col items-center text-xs hover:text-teal-600">
+              <Briefcase size={20} className="mb-1" /> Jobs
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link to="/employer/search" className="text-gray-600 flex flex-col items-center text-xs hover:text-teal-600">
+              <Search size={20} className="mb-1" /> Search
+            </Link>
+            <Link to="/employer/jobs/new" className="text-gray-600 flex flex-col items-center text-xs hover:text-teal-600">
+              <Briefcase size={20} className="mb-1" /> Post
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
