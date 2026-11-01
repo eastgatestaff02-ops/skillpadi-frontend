@@ -1,62 +1,142 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { authApi } from '../../lib/api/auth';
+import { Lock, ArrowRight } from 'lucide-react';
+import { authApi } from '@/lib/api/auth';
+import { formatNigerianPhone } from '@/lib/utils/phone';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import AuthLayout from '@/components/layout/AuthLayout';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import TextField from '@/components/ui/TextField';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
+
+const RESEND_SECONDS = 30;
+
+const formatCountdown = (seconds) => {
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const rest = String(seconds % 60).padStart(2, '0');
+  return `${minutes}:${rest}`;
+};
+
+const getOtpMessage = (err) => {
+  const code = err.response?.data?.error?.code;
+  if (code === 'OTP_INVALID') return 'Code incorrect. Try again.';
+  if (code === 'OTP_EXPIRED') return 'Code expired. Please request a new one.';
+  if (code === 'OTP_ATTEMPTS_EXCEEDED') return 'Too many attempts. Try again later.';
+  return getApiErrorMessage(err, 'Verification failed. Please try again.');
+};
 
 export default function RegisterVerify() {
   const [otp, setOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Get phone from state passed from Signup, or fallback to local storage
+
   const phone = location.state?.phone || localStorage.getItem('reg_phone');
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return undefined;
+    const timer = setTimeout(() => setSecondsLeft((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
 
   const verifyMutation = useMutation({
     mutationFn: () => authApi.verifyOtp({ phone, otp }),
     onSuccess: (res) => {
-      // Save the registration token to use in the next step
       if (res.data.registration_token) {
         localStorage.setItem('reg_token', res.data.registration_token);
       }
       navigate('/auth/register/complete');
     },
-    onError: (err) => {
-      const error = err.response?.data?.error;
-      if (error?.code === 'OTP_INVALID') setErrorMsg('Incorrect code. Please try again.');
-      else if (error?.code === 'OTP_EXPIRED') setErrorMsg('Code expired. Please request a new one.');
-      else if (error?.code === 'OTP_ATTEMPTS_EXCEEDED') setErrorMsg('Too many attempts. Try again later.');
-      else setErrorMsg('Verification failed. Please try again.');
-    }
+    onError: (err) => setErrorMsg(getOtpMessage(err)),
   });
 
+  const resendMutation = useMutation({
+    mutationFn: () => authApi.requestOtp({ phone }),
+    onSuccess: () => {
+      setSecondsLeft(RESEND_SECONDS);
+      setOtp('');
+      setErrorMsg('');
+    },
+  });
+
+  if (!phone) {
+    return <Navigate to="/auth/signup" replace />;
+  }
+
+  const canSubmit = otp.length === 6;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!canSubmit || verifyMutation.isPending) return;
+    verifyMutation.mutate();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded bg-white p-8 shadow">
-        <h2 className="mb-2 text-2xl font-bold text-teal-700">Verify Phone</h2>
-        <p className="mb-6 text-sm text-gray-500">Enter the 6-digit code sent to {phone || 'your phone'}</p>
-        
-        <input 
-          type="text" 
-          placeholder="123456" 
+    <AuthLayout
+      title="Verify your phone"
+      subtitle="Enter the 6-digit code we sent by SMS."
+      footer={
+        <Link to="/auth/signup" className="font-bold text-ochre-900 hover:underline">
+          Change phone number
+        </Link>
+      }
+    >
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <TextField
+          label="One-time passcode"
+          icon={Lock}
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
           maxLength={6}
-          className="mb-2 w-full rounded border p-2 text-center text-lg tracking-widest" 
-          value={otp} 
+          placeholder="000000"
+          inputClassName="tracking-[0.4em]"
+          helper={`Sent to ${formatNigerianPhone(phone)}`}
+          error={errorMsg}
+          value={otp}
           onChange={(e) => {
-            setOtp(e.target.value);
+            setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
             setErrorMsg('');
-          }} 
+          }}
         />
-        {errorMsg && <p className="mb-4 text-sm text-red-500">{errorMsg}</p>}
-        
-        <button 
-          onClick={() => verifyMutation.mutate()}
-          disabled={verifyMutation.isPending || otp.length < 6}
-          className="mt-2 w-full rounded bg-teal-600 py-2 text-white hover:bg-teal-700 disabled:opacity-50"
+
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          loading={verifyMutation.isPending}
+          disabled={!canSubmit}
+          rightIcon={ArrowRight}
         >
-          {verifyMutation.isPending ? 'Verifying...' : 'Verify OTP'}
-        </button>
-      </div>
-    </div>
+          Verify phone number
+        </Button>
+      </form>
+
+      <Card className="mt-6 border-navy-100 p-3">
+        <p className="mb-2 text-body2 text-navy-500">Didn't receive the code?</p>
+        <Button
+          variant="outlined"
+          fullWidth
+          loading={resendMutation.isPending}
+          disabled={secondsLeft > 0}
+          onClick={() => resendMutation.mutate()}
+        >
+          {secondsLeft > 0 ? `Resend in ${formatCountdown(secondsLeft)}` : 'Resend code'}
+        </Button>
+        {resendMutation.isError && (
+          <FeedbackBanner tone="error" className="mt-3">
+            {getApiErrorMessage(resendMutation.error)}
+          </FeedbackBanner>
+        )}
+        {resendMutation.isSuccess && secondsLeft > 0 && (
+          <FeedbackBanner tone="success" className="mt-3">
+            A new code has been sent.
+          </FeedbackBanner>
+        )}
+      </Card>
+    </AuthLayout>
   );
 }
