@@ -4,7 +4,7 @@ import App from './App.jsx';
 import './index.css';
 
 async function enableMocking() {
-  if (import.meta.env.MODE !== 'development') return;
+  if (import.meta.env.VITE_USE_MOCKS !== 'true') return;
   const { worker } = await import('./lib/msw/browser');
   return worker.start({ onUnhandledRequest: 'bypass' });
 }
