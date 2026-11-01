@@ -1,57 +1,121 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { authApi } from '../../lib/api/auth';
-import { useAuthStore } from '../../lib/store/authStore';
+import { User, Lock, ArrowRight } from 'lucide-react';
+import { authApi } from '@/lib/api/auth';
+import { useAuthStore } from '@/lib/store/authStore';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import AuthLayout from '@/components/layout/AuthLayout';
+import Button from '@/components/ui/Button';
+import TextField from '@/components/ui/TextField';
+import ConsentControl from '@/components/ui/ConsentControl';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 export default function CompleteRegistration() {
+  const [name, setName] = useState('');
   const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [consent, setConsent] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
-  
+
   const phone = localStorage.getItem('reg_phone');
   const regToken = localStorage.getItem('reg_token');
 
   const completeMutation = useMutation({
-    mutationFn: () => authApi.completeRegistration({ 
-      phone, 
-      otp_token: regToken, 
-      pin, 
-      name: 'New User' // You might want to add a First Name input to your form
-    }),
+    mutationFn: () =>
+      authApi.completeRegistration({
+        phone,
+        otp_token: regToken,
+        pin,
+        name: name.trim(),
+      }),
     onSuccess: (res) => {
       const { access_token, refresh_token, user } = res.data;
       setAuth(access_token, refresh_token, user);
+      localStorage.removeItem('reg_phone');
+      localStorage.removeItem('reg_token');
       navigate('/auth/select-role');
     },
-    onError: (err) => {
-      alert(err.response?.data?.error?.message || 'Failed to complete registration');
-    }
   });
 
+  if (!phone || !regToken) {
+    return <Navigate to="/auth/signup" replace />;
+  }
+
+  const pinMismatch = confirmPin.length === 4 && confirmPin !== pin;
+  const canSubmit =
+    name.trim().length >= 2 && /^\d{4}$/.test(pin) && confirmPin === pin && consent;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!canSubmit || completeMutation.isPending) return;
+    completeMutation.mutate();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded bg-white p-8 shadow">
-        <h2 className="mb-4 text-2xl font-bold text-teal-700">Create a PIN</h2>
-        <p className="mb-6 text-sm text-gray-500">Secure your account with a 4-digit PIN.</p>
-        
-        <input 
-          type="password" 
-          placeholder="****" 
-          maxLength={4}
-          className="mb-4 w-full rounded border p-2 text-center text-lg" 
-          value={pin} 
-          onChange={(e) => setPin(e.target.value)} 
+    <AuthLayout
+      title="Almost there"
+      subtitle="Tell us your name and choose a 4-digit PIN to secure your account."
+    >
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <TextField
+          label="Full name"
+          icon={User}
+          type="text"
+          autoComplete="name"
+          placeholder="e.g. Adewale Okafor"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        
-        <button 
-          onClick={() => completeMutation.mutate()}
-          disabled={completeMutation.isPending || pin.length < 4}
-          className="w-full rounded bg-teal-600 py-2 text-white hover:bg-teal-700 disabled:opacity-50"
+
+        <TextField
+          label="Create a PIN"
+          icon={Lock}
+          type="password"
+          inputMode="numeric"
+          autoComplete="new-password"
+          maxLength={4}
+          placeholder="4 digits"
+          helper="Choose 4 digits you will remember."
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        />
+
+        <TextField
+          label="Confirm your PIN"
+          icon={Lock}
+          type="password"
+          inputMode="numeric"
+          autoComplete="new-password"
+          maxLength={4}
+          placeholder="4 digits"
+          error={pinMismatch ? 'PINs do not match.' : ''}
+          value={confirmPin}
+          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        />
+
+        <ConsentControl checked={consent} onChange={setConsent}>
+          I consent to SkillPadi using my personal data to create and manage my account.
+        </ConsentControl>
+
+        {completeMutation.isError && (
+          <FeedbackBanner tone="error">
+            {getApiErrorMessage(completeMutation.error, 'Failed to complete registration.')}
+          </FeedbackBanner>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          loading={completeMutation.isPending}
+          disabled={!canSubmit}
+          rightIcon={ArrowRight}
         >
-          {completeMutation.isPending ? 'Saving...' : 'Complete Setup'}
-        </button>
-      </div>
-    </div>
+          Create my account
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

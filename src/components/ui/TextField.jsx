@@ -1,7 +1,17 @@
 import { forwardRef, useId } from 'react';
 
 const TextField = forwardRef(function TextField(
-  { label, labelRight, icon: Icon, helper, error, id, className = '', ...inputProps },
+  {
+    label,
+    labelRight,
+    icon: Icon,
+    helper,
+    error,
+    id,
+    className = '',
+    inputClassName = '',
+    ...inputProps
+  },
   ref
 ) {
   const generatedId = useId();
@@ -38,7 +48,7 @@ const TextField = forwardRef(function TextField(
           ref={ref}
           aria-invalid={error ? true : undefined}
           aria-describedby={messageId}
-          className="min-w-0 flex-1 bg-transparent text-body1 text-navy-500 outline-none placeholder:text-navy-500/40"
+          className={`min-w-0 flex-1 bg-transparent text-body1 text-navy-500 outline-none placeholder:text-navy-500/40 ${inputClassName}`}
           {...inputProps}
         />
       </div>

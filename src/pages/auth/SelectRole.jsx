@@ -1,56 +1,103 @@
-import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '../../lib/api/auth';
-import { useAuthStore } from '../../lib/store/authStore';
-import { Briefcase, User, GraduationCap } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { Wrench, Briefcase, BookOpen, Users, ArrowRight } from 'lucide-react';
+import { authApi } from '@/lib/api/auth';
+import { useAuthStore } from '@/lib/store/authStore';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import AuthLayout from '@/components/layout/AuthLayout';
+import Button from '@/components/ui/Button';
+import RoleCard from '@/components/ui/RoleCard';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
+
+const roleOptions = [
+  {
+    id: 'worker',
+    title: 'Worker',
+    description: 'Show your skills and find work.',
+    icon: Wrench,
+    apiRole: 'worker',
+    next: '/worker/profile',
+  },
+  {
+    id: 'employer',
+    title: 'Employer',
+    description: 'Find the right person for your job.',
+    icon: Briefcase,
+    apiRole: 'employer',
+    next: '/employer/search',
+  },
+  {
+    id: 'apprentice',
+    title: 'Apprentice',
+    description: 'Learn a trade with a trainer.',
+    icon: BookOpen,
+    apiRole: 'apprentice',
+    next: '/apprentice/dashboard',
+  },
+  {
+    id: 'trainer',
+    title: 'Trainer',
+    description: 'Share your experience. Train others.',
+    icon: Users,
+    apiRole: 'worker',
+    next: '/trainer/profile',
+  },
+];
 
 export default function SelectRole() {
+  const [selectedId, setSelectedId] = useState(null);
   const navigate = useNavigate();
   const { user, setUser } = useAuthStore();
 
   const mutation = useMutation({
-    mutationFn: (role) => authApi.updateRole(role),
-    onSuccess: (_, role) => {
-      // Update user role in state
-      setUser({ ...user, role });
-      
-      // Navigate to the correct dashboard
-      if (role === 'worker') navigate('/worker/profile');
-      else if (role === 'employer') navigate('/employer/search');
-      else navigate(`/${role}/dashboard`);
+    mutationFn: (option) => authApi.updateRole(option.apiRole),
+    onSuccess: (_, option) => {
+      setUser({ ...user, role: option.apiRole });
+      navigate(option.next);
     },
-    onError: (err) => {
-      alert('Failed to set role. Please try again.');
-    }
   });
 
-  const roles = [
-    { id: 'worker', title: 'Skilled Worker', desc: 'Offer your trade services', icon: <Briefcase size={32} className="text-teal-600 mb-3" /> },
-    { id: 'employer', title: 'Employer', desc: 'Hire skilled workers', icon: <User size={32} className="text-teal-600 mb-3" /> },
-    { id: 'apprentice', title: 'Apprentice', desc: 'Learn a trade', icon: <GraduationCap size={32} className="text-teal-600 mb-3" /> },
-  ];
+  const selected = roleOptions.find((option) => option.id === selectedId);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-3xl">
-        <h1 className="text-3xl font-bold mb-2 text-center text-teal-700">Choose your role</h1>
-        <p className="text-center text-gray-500 mb-8">How do you want to use SkillPadi?</p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {roles.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => mutation.mutate(r.id)}
-              disabled={mutation.isPending}
-              className="bg-white p-6 rounded-xl shadow-sm border-2 border-transparent hover:border-teal-500 hover:shadow-md transition text-left flex flex-col items-center text-center"
-            >
-              {r.icon}
-              <h2 className="font-bold text-lg text-gray-900 mb-1">{r.title}</h2>
-              <p className="text-sm text-gray-500">{r.desc}</p>
-            </button>
-          ))}
-        </div>
+    <AuthLayout
+      bare
+      wide
+      title="Choose your role"
+      subtitle="How do you want to use SkillPadi?"
+    >
+      <div role="radiogroup" aria-label="Choose your role" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {roleOptions.map((option) => (
+          <RoleCard
+            key={option.id}
+            icon={option.icon}
+            title={option.title}
+            description={option.description}
+            selected={selectedId === option.id}
+            disabled={mutation.isPending}
+            onSelect={() => setSelectedId(option.id)}
+          />
+        ))}
       </div>
-    </div>
+
+      {mutation.isError && (
+        <FeedbackBanner tone="error" className="mt-4">
+          {getApiErrorMessage(mutation.error, 'Failed to set your role. Please try again.')}
+        </FeedbackBanner>
+      )}
+
+      <Button
+        size="lg"
+        fullWidth
+        className="mt-6"
+        loading={mutation.isPending}
+        disabled={!selected}
+        rightIcon={ArrowRight}
+        onClick={() => mutation.mutate(selected)}
+      >
+        Continue
+      </Button>
+    </AuthLayout>
   );
 }
