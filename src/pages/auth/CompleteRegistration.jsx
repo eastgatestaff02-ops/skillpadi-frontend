@@ -40,7 +40,7 @@ export default function CompleteRegistration() {
   });
 
   if (!phone || !regToken) {
-    return <Navigate to="/auth/signup" replace />;
+    return <Navigate to="/auth/sign-up" replace />;
   }
 
   const pinMismatch = confirmPin.length === 4 && confirmPin !== pin;

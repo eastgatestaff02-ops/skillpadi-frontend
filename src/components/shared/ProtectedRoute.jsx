@@ -5,7 +5,7 @@ export default function ProtectedRoute({ role }) {
   const { accessToken, user } = useAuthStore();
 
   if (!accessToken) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/auth/sign-in" replace />;
   }
 
   if (role && user?.role !== role) {

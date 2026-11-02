@@ -43,12 +43,14 @@ const devRoutes = import.meta.env.DEV
   : [];
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/auth/login" replace /> },
-  { path: '/register', element: <Navigate to="/auth/signup" replace /> },
-  { path: '/auth/register', element: <Navigate to="/auth/signup" replace /> },
+  { path: '/', element: <Navigate to="/auth/sign-in" replace /> },
+  { path: '/register', element: <Navigate to="/auth/sign-up" replace /> },
+  { path: '/auth/register', element: <Navigate to="/auth/sign-up" replace /> },
+  { path: '/auth/login', element: <Navigate to="/auth/sign-in" replace /> },
+  { path: '/auth/signup', element: <Navigate to="/auth/sign-up" replace /> },
 
-  { path: '/auth/login', element: <Login /> },
-  { path: '/auth/signup', element: <Signup /> },
+  { path: '/auth/sign-in', element: <Login /> },
+  { path: '/auth/sign-up', element: <Signup /> },
   { path: '/auth/register/verify', element: <RegisterVerify /> },
   { path: '/auth/register/complete', element: <CompleteRegistration /> },
   { path: '/auth/select-role', element: <SelectRole /> },
