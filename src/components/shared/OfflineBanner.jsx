@@ -9,9 +9,9 @@ export default function OfflineBanner() {
   return (
     <div
       role="status"
-      className="flex items-center justify-center gap-2 bg-yellow-100 px-4 py-2 text-sm text-yellow-800"
+      className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-navy-50 px-4 py-2 text-center text-body2 text-navy-500"
     >
-      <WifiOff size={16} />
+      <WifiOff size={16} className="shrink-0" />
       You are offline. Some things may not load or save until your connection returns.
     </div>
   );
