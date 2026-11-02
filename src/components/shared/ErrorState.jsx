@@ -1,5 +1,6 @@
 import { AlertCircle, WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
+import Button from '@/components/ui/Button';
 
 export default function ErrorState({ message = 'Something went wrong.', onRetry }) {
   const isOnline = useOnlineStatus();
@@ -9,18 +10,14 @@ export default function ErrorState({ message = 'Something went wrong.', onRetry 
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 px-6 py-12 text-center"
+      className="flex flex-col items-center gap-3 rounded-xl border border-danger-200 bg-danger-50 px-6 py-10 text-center"
     >
-      <Icon size={32} className="text-red-500" />
-      <p className="text-sm text-red-700">{text}</p>
+      <Icon size={32} className="text-danger-500" />
+      <p className="max-w-sm text-body2 text-navy-500">{text}</p>
       {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
-        >
+        <Button tone="error" variant="outlined" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
       )}
     </div>
   );
