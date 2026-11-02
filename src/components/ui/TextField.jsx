@@ -5,6 +5,7 @@ const TextField = forwardRef(function TextField(
     label,
     labelRight,
     icon: Icon,
+    endAdornment,
     helper,
     error,
     id,
@@ -51,6 +52,7 @@ const TextField = forwardRef(function TextField(
           className={`min-w-0 flex-1 bg-transparent text-body1 text-navy-500 outline-none placeholder:text-navy-500/40 ${inputClassName}`}
           {...inputProps}
         />
+        {endAdornment}
       </div>
 
       {message && (

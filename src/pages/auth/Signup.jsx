@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Phone, ArrowRight } from 'lucide-react';
+import { User, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
-import { normalizeNigerianPhone } from '@/lib/utils/phone';
+import { parseIdentifier, identifierPayload } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import AuthLayout from '@/components/layout/AuthLayout';
 import Button from '@/components/ui/Button';
@@ -15,29 +15,32 @@ export default function Signup() {
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
-  const phone = normalizeNigerianPhone(value);
-  const fieldError = submitted && !phone ? 'Enter +234 followed by 10 digits.' : '';
+  const identifier = parseIdentifier(value);
+  const fieldError =
+    submitted && !identifier
+      ? 'Enter a phone number (+234 followed by 10 digits) or a valid email.'
+      : '';
 
   const requestOtp = useMutation({
-    mutationFn: (number) => authApi.requestOtp({ phone: number }),
-    onSuccess: (_, number) => {
-      localStorage.setItem('reg_phone', number);
+    mutationFn: (parsed) => authApi.requestOtp(identifierPayload(parsed)),
+    onSuccess: (_, parsed) => {
+      localStorage.setItem('reg_identifier', JSON.stringify(parsed));
       localStorage.removeItem('reg_token');
-      navigate('/auth/register/verify', { state: { phone: number } });
+      navigate('/auth/register/verify', { state: { identifier: parsed } });
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!phone || requestOtp.isPending) return;
-    requestOtp.mutate(phone);
+    if (!identifier || requestOtp.isPending) return;
+    requestOtp.mutate(identifier);
   };
 
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Start with your phone number. We only ask for what we need now."
+      subtitle="Sign up with your phone number or email."
       footer={
         <>
           Already have an account?{' '}
@@ -49,13 +52,12 @@ export default function Signup() {
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <TextField
-          label="Nigerian phone number"
-          icon={Phone}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="+234 801 234 5678"
-          helper="We'll send a one-time code by SMS."
+          label="Phone number or email"
+          icon={User}
+          type="text"
+          autoComplete="username"
+          placeholder="+234 801 234 5678 or you@example.com"
+          helper="We'll send a one-time code to verify it."
           error={fieldError}
           value={value}
           onChange={(e) => setValue(e.target.value)}

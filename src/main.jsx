@@ -6,8 +6,12 @@ import './index.css';
 
 async function enableMocking() {
   if (import.meta.env.VITE_USE_MOCKS !== 'true') return;
-  const { worker } = await import('./lib/msw/browser');
-  return worker.start({ onUnhandledRequest: 'bypass' });
+  try {
+    const { worker } = await import('./lib/msw/browser');
+    await worker.start({ onUnhandledRequest: 'bypass' });
+  } catch (error) {
+    console.error('The mock server failed to start', error);
+  }
 }
 
 enableMocking().then(() => {
