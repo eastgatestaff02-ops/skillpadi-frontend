@@ -1,57 +1,122 @@
-import { useQuery } from '@tanstack/react-query';
-import { jobsApi } from '@/lib/api/jobs';
 import { Link } from 'react-router-dom';
-import { User, FileText, Settings } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { User, Briefcase, ClipboardList } from 'lucide-react';
+import { jobsApi } from '@/lib/api/jobs';
+import { unwrapList } from '@/lib/utils/api';
+import { queryDefaults } from '@/lib/utils/network';
+import Card from '@/components/ui/Card';
+import Chip from '@/components/ui/Chip';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
+
+const statusTone = {
+  pending: 'ochre',
+  accepted: 'success',
+  declined: 'danger',
+  rejected: 'danger',
+};
+
+const capitalise = (value) => value.charAt(0).toUpperCase() + value.slice(1);
+
+const shortcuts = [
+  {
+    to: '/worker/profile',
+    icon: User,
+    title: 'My profile',
+    description: 'Update your skills and work photos.',
+  },
+  {
+    to: '/worker/jobs',
+    icon: Briefcase,
+    title: 'Find jobs',
+    description: 'Browse open work near you.',
+  },
+];
 
 export default function WorkerDashboard() {
-  const { data: applications, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['myApplications'],
-    queryFn: () => jobsApi.getMyApplications().then(res => res.data),
+    queryFn: () => jobsApi.getMyApplications().then((res) => unwrapList(res.data)),
+    ...queryDefaults,
   });
 
+  const applications = data || [];
+
+  let content;
+  if (isLoading) {
+    content = <LoadingSpinner label="Loading your applications..." />;
+  } else if (isError) {
+    content = <ErrorState message="We could not load your applications." onRetry={refetch} />;
+  } else if (applications.length === 0) {
+    content = (
+      <EmptyState
+        icon={ClipboardList}
+        title="No applications yet"
+        message="Apply to a job and you can follow its progress here."
+        action={
+          <Button to="/worker/jobs" variant="outlined">
+            Find jobs
+          </Button>
+        }
+      />
+    );
+  } else {
+    content = (
+      <Card className="divide-y divide-navy-50 p-0">
+        {applications.map((application) => {
+          const status = String(application.status || '').toLowerCase();
+          const employer =
+            application.job?.employer?.companyName || application.job?.employer?.name;
+          return (
+            <div key={application.id} className="flex items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="truncate text-body2 font-bold text-navy-500">
+                  {application.job?.title || 'Job'}
+                </p>
+                {employer && (
+                  <p className="truncate text-caption text-navy-500/70">{employer}</p>
+                )}
+              </div>
+              {status && <Chip tone={statusTone[status] || 'neutral'}>{capitalise(status)}</Chip>}
+            </div>
+          );
+        })}
+      </Card>
+    );
+  }
+
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Worker Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Link to="/worker/profile" className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition">
-          <User className="text-teal-600 mb-3" size={28} />
-          <h2 className="font-bold text-lg">My Profile</h2>
-          <p className="text-gray-500 text-sm">Update your skills and portfolio</p>
-        </Link>
-        <Link to="/worker/jobs" className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition">
-          <FileText className="text-teal-600 mb-3" size={28} />
-          <h2 className="font-bold text-lg">Find Jobs</h2>
-          <p className="text-gray-500 text-sm">Browse open opportunities</p>
-        </Link>
+    <div className="text-left">
+      <h1 className="text-h2 font-bold text-navy-500">Home</h1>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {shortcuts.map(({ to, icon: Icon, title, description }) => (
+          <Card
+            key={to}
+            as={Link}
+            to={to}
+            className="flex items-center gap-3 transition-colors hover:border-ochre-200"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ochre-100">
+              <Icon size={22} className="text-navy-500" />
+            </span>
+            <span>
+              <span className="block text-body1 font-bold text-navy-500">{title}</span>
+              <span className="block text-body2 text-navy-500/70">{description}</span>
+            </span>
+          </Card>
+        ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h2 className="text-xl font-bold mb-4">My Applications</h2>
-        {isLoading ? (
-          <p>Loading...</p>
-        ) : applications?.length === 0 ? (
-          <p className="text-gray-500">You haven't applied to any jobs yet.</p>
-        ) : (
-          <div className="divide-y">
-            {applications?.map(app => (
-              <div key={app.id} className="py-3 flex justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{app.job.title}</p>
-                  <p className="text-sm text-gray-500">{app.job.employer.companyName}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                  app.status === 'Accepted' ? 'bg-green-100 text-green-700' :
-                  'bg-red-100 text-red-700'
-                }`}>
-                  {app.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <h2 className="mb-3 mt-8 text-h3 font-bold text-navy-500">My applications</h2>
+      {content}
     </div>
   );
 }

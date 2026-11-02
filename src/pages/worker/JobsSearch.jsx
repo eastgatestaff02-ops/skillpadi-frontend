@@ -1,81 +1,155 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Search, MapPin, Check, Briefcase } from 'lucide-react';
 import { jobsApi } from '@/lib/api/jobs';
-import { MapPin, Briefcase, Search } from 'lucide-react';
+import { unwrapList } from '@/lib/utils/api';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import { queryDefaults, mutationDefaults } from '@/lib/utils/network';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Chip from '@/components/ui/Chip';
+import TextField from '@/components/ui/TextField';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
+
+const emptyFilters = { trade: '', location: '' };
+
+const toParams = (filters) =>
+  Object.fromEntries(Object.entries(filters).filter(([, value]) => value.trim()));
+
+const formatBudget = (value) =>
+  value
+    ? new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+        maximumFractionDigits: 0,
+      }).format(value)
+    : 'Budget not set';
 
 export default function JobsSearch() {
-  const [filters, setFilters] = useState({ trade: '', location: '' });
-  const [searchTrigger, setSearchTrigger] = useState(null);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [applied, setApplied] = useState(emptyFilters);
+  const [appliedIds, setAppliedIds] = useState([]);
 
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ['openJobs', searchTrigger],
-    queryFn: () => jobsApi.getOpenJobs(searchTrigger).then(res => res.data),
-    enabled: !!searchTrigger,
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['openJobs', applied],
+    queryFn: () => jobsApi.getOpenJobs(toParams(applied)).then((res) => unwrapList(res.data)),
+    ...queryDefaults,
   });
 
   const applyMutation = useMutation({
     mutationFn: (jobId) => jobsApi.applyForJob(jobId, { message: 'I am interested' }),
-    onSuccess: () => alert('Application submitted!'),
-    onError: () => alert('Failed to apply. You may have already applied.'),
+    onSuccess: (_, jobId) => setAppliedIds((ids) => [...ids, jobId]),
+    ...mutationDefaults,
   });
+
+  const jobs = data || [];
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setSearchTrigger(filters);
+    setApplied(filters);
   };
 
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Find Jobs</h1>
+  const handleReset = () => {
+    setFilters(emptyFilters);
+    setApplied(emptyFilters);
+  };
 
-      <form onSubmit={handleSearch} className="flex gap-4 mb-8 bg-white p-4 rounded shadow-sm">
-        <input 
-          type="text" 
-          placeholder="Trade (e.g. Electrician)" 
-          value={filters.trade}
-          onChange={(e) => setFilters({ ...filters, trade: e.target.value })}
-          className="flex-1 border p-2 rounded"
-        />
-        <input 
-          type="text" 
-          placeholder="Location" 
-          value={filters.location}
-          onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-          className="flex-1 border p-2 rounded"
-        />
-        <button type="submit" className="bg-teal-600 text-white px-6 py-2 rounded flex items-center gap-2">
-          <Search size={18} /> Search
-        </button>
-      </form>
+  let content;
+  if (isLoading) {
+    content = <LoadingSpinner label="Finding jobs..." />;
+  } else if (isError) {
+    content = <ErrorState message="We could not load jobs." onRetry={refetch} />;
+  } else if (jobs.length === 0) {
+    content = (
+      <EmptyState
+        icon={Briefcase}
+        title="No jobs found"
+        message="Try a different trade or nearby location."
+        action={<Button onClick={handleReset}>Change search</Button>}
+      />
+    );
+  } else {
+    content = (
+      <div className="space-y-4">
+        {jobs.map((job) => {
+          const trade = job.trade?.name || job.trade || job.tradeName;
+          const location = typeof job.location === 'string' ? job.location : job.location?.name;
+          const hasApplied = appliedIds.includes(job.id);
+          const isApplying = applyMutation.isPending && applyMutation.variables === job.id;
 
-      {isLoading ? (
-        <div className="text-center py-10">Loading jobs...</div>
-      ) : jobs?.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">No jobs found.</div>
-      ) : (
-        <div className="space-y-4">
-          {jobs?.map((job) => (
-            <div key={job.id} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{job.title}</h2>
-                <p className="text-teal-700 font-medium flex items-center gap-1 mt-1">
-                  <Briefcase size={16} /> {job.trade}
-                </p>
-                <p className="text-gray-500 text-sm flex items-center gap-1 mt-1">
-                  <MapPin size={16} /> {job.location} • Budget: ₦{job.budget}
-                </p>
+          return (
+            <Card key={job.id}>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-body1 font-bold text-navy-500">{job.title}</h2>
+                {trade && <Chip>{trade}</Chip>}
               </div>
-              <button 
-                onClick={() => applyMutation.mutate(job.id)}
-                disabled={applyMutation.isPending}
-                className="bg-teal-50 text-teal-700 border border-teal-200 px-4 py-2 rounded hover:bg-teal-100 font-medium"
-              >
-                Apply Now
-              </button>
-            </div>
-          ))}
-        </div>
+              <p className="mt-1 flex items-center gap-1 text-caption text-navy-500/70">
+                <MapPin size={12} className="shrink-0" />
+                {location}
+              </p>
+              {job.description && (
+                <p className="mt-2 line-clamp-2 text-body2 text-navy-500">{job.description}</p>
+              )}
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-body1 font-bold text-navy-500">{formatBudget(job.budget)}</p>
+                <Button
+                  size="md"
+                  leftIcon={hasApplied ? Check : undefined}
+                  loading={isApplying}
+                  disabled={hasApplied || applyMutation.isPending}
+                  onClick={() => applyMutation.mutate(job.id)}
+                >
+                  {hasApplied ? 'Applied' : 'Apply'}
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-left">
+      <h1 className="text-h2 font-bold text-navy-500">Find jobs</h1>
+
+      <Card className="mb-6 mt-4 p-4">
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextField
+              label="Trade"
+              icon={Search}
+              placeholder="e.g. Electrician"
+              value={filters.trade}
+              onChange={(e) => setFilters({ ...filters, trade: e.target.value })}
+            />
+            <TextField
+              label="Location"
+              icon={MapPin}
+              placeholder="City or state"
+              value={filters.location}
+              onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+            />
+          </div>
+          <Button type="submit" size="lg" fullWidth>
+            Search jobs
+          </Button>
+        </form>
+      </Card>
+
+      {applyMutation.isError && (
+        <FeedbackBanner tone="error" className="mb-4">
+          {getApiErrorMessage(
+            applyMutation.error,
+            'Could not apply. You may have already applied to this job.'
+          )}
+        </FeedbackBanner>
       )}
+
+      {content}
     </div>
   );
 }
