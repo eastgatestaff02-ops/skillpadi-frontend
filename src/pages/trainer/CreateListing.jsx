@@ -1,126 +1,116 @@
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, ArrowLeft } from 'lucide-react';
 import { useCreateListing } from '@/lib/hooks/useListings';
-import { TRADES, DURATION_OPTIONS } from '@/lib/utils/constants';
-
-const fieldClass = 'w-full rounded border p-2';
-const errorClass = 'mt-1 text-xs text-red-600';
+import { useTrades } from '@/lib/hooks/useCatalog';
+import { DURATION_OPTIONS } from '@/lib/utils/constants';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import TextField from '@/components/ui/TextField';
+import TextAreaField from '@/components/ui/TextAreaField';
+import SelectField from '@/components/ui/SelectField';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 export default function CreateListing() {
   const navigate = useNavigate();
+  const { data: trades = [] } = useTrades();
   const createListing = useCreateListing();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: {
-      trade: '',
-      location: '',
-      duration: '',
-      requirements: '',
-    },
+    defaultValues: { trade: '', location: '', duration: '', requirements: '' },
   });
 
-  const onSubmit = (data) => {
-    createListing.mutate(data, {
-      onSuccess: () => navigate('/trainer/dashboard'),
-    });
+  const onSubmit = (values) => {
+    createListing.mutate(
+      {
+        trade: values.trade,
+        location: values.location.trim(),
+        duration: values.duration,
+        requirements: values.requirements.trim(),
+      },
+      { onSuccess: () => navigate('/trainer/dashboard') }
+    );
   };
 
-  const submitError =
-    createListing.error?.response?.data?.error?.message ||
-    (createListing.isError ? 'Could not create the listing. Please try again.' : null);
-
   return (
-    <div className="mx-auto max-w-2xl p-4 text-left md:p-8">
-      <h1 className="mb-6 text-2xl font-bold">Create Training Listing</h1>
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        noValidate
-        className="space-y-4 rounded-lg bg-white p-6 shadow"
+    <div className="mx-auto max-w-xl text-left">
+      <Button
+        to="/trainer/dashboard"
+        variant="text"
+        size="sm"
+        leftIcon={ArrowLeft}
+        className="mb-3"
       >
-        <div>
-          <label className="block text-sm font-medium">Trade</label>
-          <select
-            className={fieldClass}
-            {...register('trade', { required: 'Please choose a trade' })}
+        Back to dashboard
+      </Button>
+
+      <Card className="p-6">
+        <h1 className="text-h2 font-bold text-navy-500">Create training listing</h1>
+        <p className="mt-1 text-body2 text-navy-500/70">
+          Tell apprentices what you teach and what they need to bring.
+        </p>
+
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
+          <SelectField
+            key={`trade-${trades.length}`}
+            label="Trade"
+            error={errors.trade?.message}
+            {...register('trade', { required: 'Choose a trade.' })}
           >
             <option value="">Select a trade</option>
-            {TRADES.map((trade) => (
-              <option key={trade} value={trade}>
-                {trade}
+            {trades.map((trade) => (
+              <option key={trade.id} value={trade.name}>
+                {trade.name}
               </option>
             ))}
-          </select>
-          {errors.trade && <p className={errorClass}>{errors.trade.message}</p>}
-        </div>
+          </SelectField>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium">Location</label>
-            <input
-              type="text"
-              placeholder="e.g. Lagos"
-              className={fieldClass}
-              {...register('location', { required: 'Please enter a location' })}
-            />
-            {errors.location && <p className={errorClass}>{errors.location.message}</p>}
-          </div>
+          <TextField
+            label="Location"
+            icon={MapPin}
+            placeholder="City and state"
+            error={errors.location?.message}
+            {...register('location', { required: 'Enter the location.' })}
+          />
 
-          <div>
-            <label className="block text-sm font-medium">Duration</label>
-            <select
-              className={fieldClass}
-              {...register('duration', { required: 'Please choose a duration' })}
-            >
-              <option value="">Select a duration</option>
-              {DURATION_OPTIONS.map((duration) => (
-                <option key={duration} value={duration}>
-                  {duration}
-                </option>
-              ))}
-            </select>
-            {errors.duration && <p className={errorClass}>{errors.duration.message}</p>}
-          </div>
-        </div>
+          <SelectField
+            label="Duration"
+            error={errors.duration?.message}
+            {...register('duration', { required: 'Choose a duration.' })}
+          >
+            <option value="">Select a duration</option>
+            {DURATION_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </SelectField>
 
-        <div>
-          <label className="block text-sm font-medium">Requirements (optional)</label>
-          <textarea
-            rows={4}
+          <TextAreaField
+            label="Requirements (optional)"
             placeholder="What should an apprentice bring or already know?"
-            className={`${fieldClass} resize-none`}
+            error={errors.requirements?.message}
             {...register('requirements', {
-              maxLength: { value: 300, message: 'Keep requirements under 300 characters' },
+              maxLength: { value: 300, message: 'Keep requirements under 300 characters.' },
             })}
           />
-          {errors.requirements && <p className={errorClass}>{errors.requirements.message}</p>}
-        </div>
 
-        {submitError && (
-          <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">
-            {submitError}
-          </p>
-        )}
+          {createListing.isError && (
+            <FeedbackBanner tone="error">
+              {getApiErrorMessage(createListing.error, 'Could not create the listing.')}
+            </FeedbackBanner>
+          )}
 
-        <div className="flex gap-3">
-          <Link
-            to="/trainer/dashboard"
-            className="flex-1 rounded bg-gray-100 py-2 text-center text-gray-700 hover:bg-gray-200"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={createListing.isPending}
-            className="flex-1 rounded bg-teal-600 py-2 text-white hover:bg-teal-700 disabled:opacity-50"
-          >
-            {createListing.isPending ? 'Saving...' : 'Create listing'}
-          </button>
-        </div>
-      </form>
+          <Button type="submit" size="lg" fullWidth loading={createListing.isPending}>
+            Create listing
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

@@ -1,130 +1,115 @@
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useTrainerProfile, useUpdateTrainerProfile } from '@/lib/hooks/useTrainer';
-import { TRADES } from '@/lib/utils/constants';
+import { useTrades } from '@/lib/hooks/useCatalog';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import TextField from '@/components/ui/TextField';
+import TextAreaField from '@/components/ui/TextAreaField';
+import SelectField from '@/components/ui/SelectField';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import ErrorState from '@/components/shared/ErrorState';
 
-const fieldClass = 'w-full rounded border p-2';
-const errorClass = 'mt-1 text-xs text-red-600';
-
 function TrainerProfileForm({ profile }) {
+  const { data: trades = [] } = useTrades();
   const updateProfile = useUpdateTrainerProfile();
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      trade: profile?.trade || '',
+      trade: profile?.trade?.name || profile?.trade || '',
       yearsOfTraining: profile?.yearsOfTraining ?? '',
       apprenticesTrained: profile?.apprenticesTrained ?? '',
       bio: profile?.bio || '',
     },
   });
 
-  const onSubmit = (data) => {
+  const bioLength = (watch('bio') || '').length;
+
+  const onSubmit = (values) => {
     updateProfile.mutate({
-      ...data,
-      yearsOfTraining: Number(data.yearsOfTraining),
-      apprenticesTrained: Number(data.apprenticesTrained),
+      trade: values.trade,
+      yearsOfTraining: Number(values.yearsOfTraining),
+      apprenticesTrained: Number(values.apprenticesTrained),
+      bio: values.bio.trim(),
     });
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="space-y-4 rounded-lg bg-white p-6 shadow"
-    >
-      <div>
-        <label className="block text-sm font-medium">Trade</label>
-        <select
-          className={fieldClass}
-          {...register('trade', { required: 'Please choose a trade' })}
-        >
-          <option value="">Select a trade</option>
-          {TRADES.map((trade) => (
-            <option key={trade} value={trade}>
-              {trade}
-            </option>
-          ))}
-        </select>
-        {errors.trade && <p className={errorClass}>{errors.trade.message}</p>}
-      </div>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
+      <SelectField
+        key={`trade-${trades.length}`}
+        label="Trade"
+        error={errors.trade?.message}
+        {...register('trade', { required: 'Choose a trade.' })}
+      >
+        <option value="">Select a trade</option>
+        {trades.map((trade) => (
+          <option key={trade.id} value={trade.name}>
+            {trade.name}
+          </option>
+        ))}
+      </SelectField>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium">Years of training</label>
-          <input
-            type="number"
-            className={fieldClass}
-            {...register('yearsOfTraining', {
-              required: 'Please enter the number of years',
-              min: { value: 0, message: 'Cannot be negative' },
-            })}
-          />
-          {errors.yearsOfTraining && (
-            <p className={errorClass}>{errors.yearsOfTraining.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Apprentices trained</label>
-          <input
-            type="number"
-            className={fieldClass}
-            {...register('apprenticesTrained', {
-              required: 'Please enter a number',
-              min: { value: 0, message: 'Cannot be negative' },
-            })}
-          />
-          {errors.apprenticesTrained && (
-            <p className={errorClass}>{errors.apprenticesTrained.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">Bio</label>
-        <textarea
-          rows={4}
-          placeholder="Tell apprentices about your experience and how you train"
-          className={`${fieldClass} resize-none`}
-          {...register('bio', {
-            required: 'Please write a short bio',
-            minLength: { value: 10, message: 'Bio must be at least 10 characters' },
-            maxLength: { value: 300, message: 'Keep the bio under 300 characters' },
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TextField
+          label="Years of training"
+          type="number"
+          inputMode="numeric"
+          error={errors.yearsOfTraining?.message}
+          {...register('yearsOfTraining', {
+            required: 'Enter the number of years.',
+            min: { value: 0, message: 'This cannot be negative.' },
           })}
         />
-        {errors.bio && <p className={errorClass}>{errors.bio.message}</p>}
+        <TextField
+          label="Apprentices trained"
+          type="number"
+          inputMode="numeric"
+          error={errors.apprenticesTrained?.message}
+          {...register('apprenticesTrained', {
+            required: 'Enter a number.',
+            min: { value: 0, message: 'This cannot be negative.' },
+          })}
+        />
       </div>
 
+      <TextAreaField
+        label="Bio"
+        labelRight={`${bioLength}/300`}
+        placeholder="Tell apprentices about your experience and how you train"
+        error={errors.bio?.message}
+        {...register('bio', {
+          required: 'Write a short bio.',
+          minLength: { value: 10, message: 'Bio must be at least 10 characters.' },
+          maxLength: { value: 300, message: 'Keep the bio under 300 characters.' },
+        })}
+      />
+
       {updateProfile.isError && (
-        <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">
-          Could not save your profile. Please try again.
-        </p>
+        <FeedbackBanner tone="error">
+          {getApiErrorMessage(updateProfile.error, 'Could not save your profile.')}
+        </FeedbackBanner>
       )}
 
-      {updateProfile.isSuccess && (
-        <p role="status" className="rounded bg-green-50 p-3 text-sm text-green-700">
-          Profile saved.
-        </p>
-      )}
+      {updateProfile.isSuccess && <FeedbackBanner tone="success">Profile saved.</FeedbackBanner>}
 
-      <button
-        type="submit"
-        disabled={updateProfile.isPending}
-        className="w-full rounded bg-teal-600 py-2 text-white hover:bg-teal-700 disabled:opacity-50"
-      >
-        {updateProfile.isPending ? 'Saving...' : 'Save profile'}
-      </button>
+      <Button type="submit" size="lg" fullWidth loading={updateProfile.isPending}>
+        Save profile
+      </Button>
     </form>
   );
 }
 
 export default function TrainerProfile() {
-  const { data: profile, isLoading, isError, refetch } = useTrainerProfile();
+  const { data, isLoading, isError, refetch } = useTrainerProfile();
+  const profile = data?.data ?? data;
 
   let content;
   if (isLoading) {
@@ -136,14 +121,24 @@ export default function TrainerProfile() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-4 text-left md:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Trainer Profile</h1>
-        <Link to="/trainer/dashboard" className="text-sm font-medium text-teal-700 hover:text-teal-800">
-          Back to dashboard
-        </Link>
-      </div>
-      {content}
+    <div className="mx-auto max-w-xl text-left">
+      <Button
+        to="/trainer/dashboard"
+        variant="text"
+        size="sm"
+        leftIcon={ArrowLeft}
+        className="mb-3"
+      >
+        Back to dashboard
+      </Button>
+
+      <Card className="p-6">
+        <h1 className="text-h2 font-bold text-navy-500">Trainer profile</h1>
+        <p className="mt-1 text-body2 text-navy-500/70">
+          This is what apprentices see before they apply.
+        </p>
+        {content}
+      </Card>
     </div>
   );
 }
