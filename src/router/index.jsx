@@ -17,6 +17,7 @@ const JobsSearch = lazy(() => import('@/pages/worker/JobsSearch'));
 
 const EmployerDashboard = lazy(() => import('@/pages/employer/Dashboard'));
 const NewJob = lazy(() => import('@/pages/employer/NewJob'));
+const JobDetail = lazy(() => import('@/pages/employer/JobDetail'));
 const SearchWorkers = lazy(() => import('@/pages/employer/SearchWorkers'));
 
 const TrainerDashboard = lazy(() => import('@/pages/trainer/Dashboard'));
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'dashboard', element: <EmployerDashboard /> },
                   { path: 'jobs/new', element: <NewJob /> },
+                  { path: 'jobs/:id', element: <JobDetail /> },
                   { path: 'search', element: <SearchWorkers /> },
                 ],
               },

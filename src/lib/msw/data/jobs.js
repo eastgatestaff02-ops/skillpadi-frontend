@@ -11,8 +11,24 @@ export const jobs = [
     status: 'open',
     createdAt: '2026-10-20T09:00:00.000Z',
     applicants: [
-      { id: 'worker-1', name: 'Emeka Obi', trade: 'Plumber', location: 'Lagos' },
-      { id: 'worker-2', name: 'Tunde Bello', trade: 'Plumber', location: 'Lagos' },
+      {
+        id: 'w-2',
+        name: 'Tunde Bello',
+        trade: 'Plumber',
+        location: 'Surulere, Lagos',
+        yearsExperience: 8,
+        rating: 4.5,
+        message: 'I can start tomorrow and bring my own tools.',
+      },
+      {
+        id: 'w-8',
+        name: 'Ngozi Eze',
+        trade: 'Plumber',
+        location: 'Wuse, Abuja FCT',
+        yearsExperience: 1,
+        rating: 0,
+        message: 'Available this weekend.',
+      },
     ],
   },
   {
@@ -27,7 +43,24 @@ export const jobs = [
     status: 'open',
     createdAt: '2026-10-21T11:30:00.000Z',
     applicants: [
-      { id: 'worker-3', name: 'Samuel Adeyemi', trade: 'Electrician', location: 'Ikeja' },
+      {
+        id: 'w-1',
+        name: 'Adewale Okafor',
+        trade: 'Electrician',
+        location: 'Ikeja, Lagos',
+        yearsExperience: 5,
+        rating: 4.8,
+        message: 'I can inspect the sockets and give you a price today.',
+      },
+      {
+        id: 'w-5',
+        name: 'Fatima Sani',
+        trade: 'Electrician',
+        location: 'Garki, Abuja FCT',
+        yearsExperience: 2,
+        rating: 0,
+        message: 'I have done similar rewiring jobs.',
+      },
     ],
   },
   {
@@ -42,7 +75,15 @@ export const jobs = [
     status: 'filled',
     createdAt: '2026-10-15T14:00:00.000Z',
     applicants: [
-      { id: 'worker-4', name: 'Chidi Nwosu', trade: 'Carpenter', location: 'Lekki' },
+      {
+        id: 'w-3',
+        name: 'Chidi Nwosu',
+        trade: 'Carpenter',
+        location: 'Ibadan North, Oyo',
+        yearsExperience: 3,
+        rating: 0,
+        message: 'Happy to build to your measurements.',
+      },
     ],
   },
 ];

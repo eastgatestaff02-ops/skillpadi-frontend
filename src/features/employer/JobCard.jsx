@@ -19,7 +19,7 @@ const formatDate = (value) => {
   return date.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
 };
 
-export default function JobCard({ job, onMarkFilled }) {
+export default function JobCard({ job }) {
   const isOpen = String(job.status || '').toLowerCase() === 'open';
   const trade = job.trade?.name || job.trade || job.tradeName;
   const location = typeof job.location === 'string' ? job.location : job.location?.name;
@@ -55,11 +55,9 @@ export default function JobCard({ job, onMarkFilled }) {
         </p>
       )}
 
-      {isOpen && onMarkFilled && (
-        <Button variant="outlined" fullWidth className="mt-4" onClick={() => onMarkFilled(job)}>
-          Mark as filled
-        </Button>
-      )}
+      <Button to={`/employer/jobs/${job.id}`} variant="outlined" fullWidth className="mt-4">
+        {isOpen ? 'View job' : 'View filled job'}
+      </Button>
     </Card>
   );
 }
