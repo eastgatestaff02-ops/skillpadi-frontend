@@ -1,33 +1,42 @@
-import { Link } from 'react-router-dom';
-import { MapPin, Clock, User } from 'lucide-react';
+import { MapPin, Clock } from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Chip from '@/components/ui/Chip';
+import Avatar from '@/components/ui/Avatar';
+import Button from '@/components/ui/Button';
 
 export default function ListingCard({ listing }) {
-  return (
-    <div className="flex flex-col rounded-lg border border-gray-100 bg-white p-5 text-left shadow">
-      <h3 className="text-lg font-bold text-gray-900">{listing.trade} apprenticeship</h3>
+  const trade = listing.trade?.name || listing.trade;
+  const trainer = listing.trainerName || 'Trainer';
 
-      <div className="mt-3 space-y-1 text-sm text-gray-500">
-        <p className="flex items-center gap-2">
-          <User size={14} /> {listing.trainerName}
-        </p>
-        <p className="flex items-center gap-2">
-          <MapPin size={14} /> {listing.location}
-        </p>
-        <p className="flex items-center gap-2">
-          <Clock size={14} /> {listing.duration}
-        </p>
-      </div>
+  return (
+    <Card className="flex flex-col">
+      <Chip tone="ochre" className="self-start">
+        {trade} apprenticeship
+      </Chip>
+      <h3 className="mt-3 text-body1 font-bold text-navy-500">Apprenticeship with {trainer}</h3>
 
       {listing.requirements && (
-        <p className="mt-3 text-sm text-gray-600">{listing.requirements}</p>
+        <p className="mt-2 line-clamp-3 text-body2 text-navy-500">{listing.requirements}</p>
       )}
 
-      <Link
-        to={`/apprentice/listings/${listing.id}/apply`}
-        className="mt-5 rounded bg-teal-600 py-2 text-center text-white hover:bg-teal-700"
-      >
-        Apply
-      </Link>
-    </div>
+      <div className="mt-4 flex items-center gap-3">
+        <Avatar name={trainer} size="sm" />
+        <div className="min-w-0">
+          <p className="truncate text-body2 font-bold text-navy-500">{trainer}</p>
+          <p className="flex items-center gap-1 text-caption text-navy-500/70">
+            <MapPin size={12} className="shrink-0" />
+            Trainer · {listing.location}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-3 flex items-center gap-1 text-caption text-navy-500/70">
+        <Clock size={12} /> {listing.duration}
+      </p>
+
+      <Button to={`/apprentice/listings/${listing.id}/apply`} fullWidth className="mt-4">
+        Apply for apprenticeship
+      </Button>
+    </Card>
   );
 }

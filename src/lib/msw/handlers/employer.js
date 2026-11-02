@@ -1,5 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { jobs } from '../data/jobs';
+import { trades } from '../data/catalog';
 import { JOB_STATUS, URGENCY } from '@/lib/utils/constants';
 import { getCurrentUser, DEMO_EMPLOYER } from '../utils';
 
@@ -42,12 +43,31 @@ export const employerHandlers = [
   http.post('/api/jobs', async ({ request }) => {
     await delay(600);
     const body = await request.json();
-    const missing = ['title', 'description', 'trade', 'location'].filter(
+    const missing = ['title', 'description', 'tradeId', 'location'].filter(
       (field) => !body[field] || !String(body[field]).trim()
     );
     if (missing.length > 0) {
       return HttpResponse.json(
-        { error: { message: `Missing required fields: ${missing.join(', ')}` } },
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request',
+            details: missing.map((path) => ({ path, message: 'This field is required' })),
+          },
+        },
+        { status: 400 }
+      );
+    }
+    const trade = trades.find((item) => item.id === body.tradeId);
+    if (!trade) {
+      return HttpResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request',
+            details: [{ path: 'tradeId', message: 'Choose a valid trade' }],
+          },
+        },
         { status: 400 }
       );
     }
@@ -57,7 +77,8 @@ export const employerHandlers = [
       employerId: employer.id,
       title: body.title.trim(),
       description: body.description.trim(),
-      trade: body.trade,
+      tradeId: trade.id,
+      trade: trade.name,
       location: body.location.trim(),
       budget: body.budget ? Number(body.budget) : null,
       urgency: body.urgency || URGENCY.NORMAL,
@@ -66,7 +87,7 @@ export const employerHandlers = [
       applicants: [],
     };
     jobs.unshift(job);
-    return HttpResponse.json(job, { status: 201 });
+    return HttpResponse.json({ data: job }, { status: 201 });
   }),
 
   http.patch('/api/jobs/:id/status', async ({ params, request }) => {

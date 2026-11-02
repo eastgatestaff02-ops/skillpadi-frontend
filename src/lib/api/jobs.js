@@ -6,4 +6,5 @@ export const jobsApi = {
   getJobDetails: (id) => apiClient.get(`/api/jobs/${id}`),
   applyForJob: (jobId, data) => apiClient.post(`/api/jobs/${jobId}/apply`, data),
   getMyApplications: () => apiClient.get('/api/workers/applications'),
+  updateJobStatus: (id, status) => apiClient.patch(`/api/jobs/${id}/status`, { status }),
 };

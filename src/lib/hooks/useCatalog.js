@@ -20,3 +20,11 @@ export const useStates = () =>
     staleTime: ONE_DAY,
     ...queryDefaults,
   });
+
+export const useSkills = () =>
+  useQuery({
+    queryKey: ['skills'],
+    queryFn: () => catalogApi.getSkills().then((res) => unwrapList(res.data)),
+    staleTime: ONE_DAY,
+    ...queryDefaults,
+  });

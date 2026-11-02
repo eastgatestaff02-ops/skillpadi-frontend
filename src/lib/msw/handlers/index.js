@@ -1,11 +1,13 @@
-
 import { authHandlers } from './auth';
+import { catalogHandlers } from './catalog';
+import { workerHandlers } from './workers';
+import { employerHandlers } from './employer';
+import { apprenticeshipHandlers } from './apprenticeship';
 
-
-import { employerAndApprenticeshipHandlers } from './employerAndApprenticeship';
-
-// Export the full list
 export const handlers = [
   ...authHandlers,
-    ...employerAndApprenticeshipHandlers,
+  ...catalogHandlers,
+  ...workerHandlers,
+  ...employerHandlers,
+  ...apprenticeshipHandlers,
 ];
