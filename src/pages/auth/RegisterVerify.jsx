@@ -63,7 +63,7 @@ export default function RegisterVerify() {
   });
 
   if (!phone) {
-    return <Navigate to="/auth/signup" replace />;
+    return <Navigate to="/auth/sign-up" replace />;
   }
 
   const canSubmit = otp.length === 6;

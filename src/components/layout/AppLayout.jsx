@@ -39,7 +39,7 @@ export default function AppLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login');
+    navigate('/auth/sign-in');
   };
 
   return (
@@ -54,7 +54,7 @@ export default function AppLayout() {
               <span className="hidden text-body2 text-navy-500/70 sm:inline">{displayName}</span>
             )}
             <Button variant="text" size="sm" leftIcon={LogOut} onClick={handleLogout}>
-              Log out
+              Sign out
             </Button>
           </div>
         </div>

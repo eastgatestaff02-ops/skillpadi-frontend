@@ -63,7 +63,7 @@ apiClient.interceptors.response.use(
         // Full logout if refresh fails
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/auth/login';
+        window.location.href = '/auth/sign-in';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

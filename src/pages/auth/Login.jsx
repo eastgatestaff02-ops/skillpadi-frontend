@@ -60,7 +60,7 @@ export default function Login() {
         <Card className="p-6">
           <h1 className="text-h2 font-bold text-navy-500">Welcome back</h1>
           <p className="mt-1 text-body2 text-navy-500/70">
-            Log in with your phone number or email and your PIN.
+            Sign in with your phone number or email and your PIN.
           </p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
@@ -96,15 +96,15 @@ export default function Login() {
               disabled={!canSubmit}
               rightIcon={ArrowRight}
             >
-              Log in
+              Sign in
             </Button>
           </form>
         </Card>
 
         <p className="mt-6 text-center text-body2 text-navy-500/70">
           New to SkillPadi?{' '}
-          <Link to="/auth/signup" className="font-bold text-ochre-900 hover:underline">
-            Create an account
+          <Link to="/auth/sign-up" className="font-bold text-ochre-900 hover:underline">
+            Sign up
           </Link>
         </p>
       </div>
