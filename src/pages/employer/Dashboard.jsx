@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Plus, Briefcase } from 'lucide-react';
-import { useMyJobs, useUpdateJobStatus } from '@/lib/hooks/useEmployerJobs';
+import { useMyJobs } from '@/lib/hooks/useEmployerJobs';
 import { JOB_STATUS } from '@/lib/utils/constants';
 import { unwrapList } from '@/lib/utils/api';
-import { getApiErrorMessage } from '@/lib/utils/errors';
 import JobCard from '@/features/employer/JobCard';
-import MarkFilledPrompt from '@/features/employer/MarkFilledPrompt';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -15,26 +13,12 @@ const isStatus = (job, status) => String(job.status || '').toLowerCase() === sta
 
 export default function EmployerDashboard() {
   const [tab, setTab] = useState(JOB_STATUS.OPEN);
-  const [selectedJob, setSelectedJob] = useState(null);
   const { data, isLoading, isError, refetch } = useMyJobs();
-  const updateStatus = useUpdateJobStatus();
 
   const jobs = unwrapList(data);
   const openJobs = jobs.filter((job) => isStatus(job, JOB_STATUS.OPEN));
   const filledJobs = jobs.filter((job) => isStatus(job, JOB_STATUS.FILLED));
   const visibleJobs = tab === JOB_STATUS.OPEN ? openJobs : filledJobs;
-
-  const handleConfirm = (job) => {
-    updateStatus.mutate(
-      { id: job.id, status: JOB_STATUS.FILLED },
-      { onSuccess: () => setSelectedJob(null) }
-    );
-  };
-
-  const handleCancel = () => {
-    updateStatus.reset();
-    setSelectedJob(null);
-  };
 
   const postJobButton = (
     <Button to="/employer/jobs/new" leftIcon={Plus}>
@@ -72,7 +56,7 @@ export default function EmployerDashboard() {
     content = (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {visibleJobs.map((job) => (
-          <JobCard key={job.id} job={job} onMarkFilled={setSelectedJob} />
+          <JobCard key={job.id} job={job} />
         ))}
       </div>
     );
@@ -94,9 +78,7 @@ export default function EmployerDashboard() {
             aria-selected={tab === item.id}
             onClick={() => setTab(item.id)}
             className={`flex-1 rounded-md px-3 py-2 text-body2 font-medium transition-colors ${
-              tab === item.id
-                ? 'bg-ochre-100 text-navy-500'
-                : 'text-navy-500/70 hover:bg-cream'
+              tab === item.id ? 'bg-ochre-100 text-navy-500' : 'text-navy-500/70 hover:bg-cream'
             }`}
           >
             {item.label} ({item.count})
@@ -105,18 +87,6 @@ export default function EmployerDashboard() {
       </div>
 
       {content}
-
-      <MarkFilledPrompt
-        job={selectedJob}
-        loading={updateStatus.isPending}
-        error={
-          updateStatus.isError
-            ? getApiErrorMessage(updateStatus.error, 'Could not update the job. Please try again.')
-            : ''
-        }
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-      />
     </div>
   );
 }
