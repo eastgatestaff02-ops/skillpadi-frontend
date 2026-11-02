@@ -3,7 +3,11 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
-import { formatNigerianPhone } from '@/lib/utils/phone';
+import {
+  identifierPayload,
+  formatIdentifier,
+  readRegistrationIdentifier,
+} from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import AuthLayout from '@/components/layout/AuthLayout';
 import Button from '@/components/ui/Button';
@@ -34,7 +38,7 @@ export default function RegisterVerify() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const phone = location.state?.phone || localStorage.getItem('reg_phone');
+  const identifier = location.state?.identifier || readRegistrationIdentifier();
 
   useEffect(() => {
     if (secondsLeft <= 0) return undefined;
@@ -43,7 +47,7 @@ export default function RegisterVerify() {
   }, [secondsLeft]);
 
   const verifyMutation = useMutation({
-    mutationFn: () => authApi.verifyOtp({ phone, otp }),
+    mutationFn: () => authApi.verifyOtp({ ...identifierPayload(identifier), otp }),
     onSuccess: (res) => {
       if (res.data.registration_token) {
         localStorage.setItem('reg_token', res.data.registration_token);
@@ -54,7 +58,7 @@ export default function RegisterVerify() {
   });
 
   const resendMutation = useMutation({
-    mutationFn: () => authApi.requestOtp({ phone }),
+    mutationFn: () => authApi.requestOtp(identifierPayload(identifier)),
     onSuccess: () => {
       setSecondsLeft(RESEND_SECONDS);
       setOtp('');
@@ -62,7 +66,7 @@ export default function RegisterVerify() {
     },
   });
 
-  if (!phone) {
+  if (!identifier) {
     return <Navigate to="/auth/sign-up" replace />;
   }
 
@@ -76,11 +80,11 @@ export default function RegisterVerify() {
 
   return (
     <AuthLayout
-      title="Verify your phone"
-      subtitle="Enter the 6-digit code we sent by SMS."
+      title="Verify your account"
+      subtitle="Enter the 6-digit code we sent you."
       footer={
-        <Link to="/auth/signup" className="font-bold text-ochre-900 hover:underline">
-          Change phone number
+        <Link to="/auth/sign-up" className="font-bold text-ochre-900 hover:underline">
+          Change phone number or email
         </Link>
       }
     >
@@ -94,7 +98,7 @@ export default function RegisterVerify() {
           maxLength={6}
           placeholder="000000"
           inputClassName="tracking-[0.4em]"
-          helper={`Sent to ${formatNigerianPhone(phone)}`}
+          helper={`Sent to ${formatIdentifier(identifier)}`}
           error={errorMsg}
           value={otp}
           onChange={(e) => {
@@ -111,7 +115,7 @@ export default function RegisterVerify() {
           disabled={!canSubmit}
           rightIcon={ArrowRight}
         >
-          Verify phone number
+          Verify
         </Button>
       </form>
 

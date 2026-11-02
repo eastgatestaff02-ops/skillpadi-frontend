@@ -4,48 +4,55 @@ import { useMutation } from '@tanstack/react-query';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
+import { identifierPayload, readRegistrationIdentifier } from '@/lib/utils/identifier';
+import { getPasswordError, PASSWORD_MIN_LENGTH } from '@/lib/utils/password';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import AuthLayout from '@/components/layout/AuthLayout';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
+import PasswordField from '@/components/ui/PasswordField';
 import ConsentControl from '@/components/ui/ConsentControl';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 export default function CompleteRegistration() {
   const [name, setName] = useState('');
-  const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [consent, setConsent] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const phone = localStorage.getItem('reg_phone');
+  const identifier = readRegistrationIdentifier();
   const regToken = localStorage.getItem('reg_token');
 
   const completeMutation = useMutation({
     mutationFn: () =>
       authApi.completeRegistration({
-        phone,
+        ...identifierPayload(identifier),
         otp_token: regToken,
-        pin,
         name: name.trim(),
+        password,
       }),
     onSuccess: (res) => {
       const { access_token, refresh_token, user } = res.data;
       setAuth(access_token, refresh_token, user);
-      localStorage.removeItem('reg_phone');
+      localStorage.removeItem('reg_identifier');
       localStorage.removeItem('reg_token');
       navigate('/auth/select-role');
     },
   });
 
-  if (!phone || !regToken) {
+  if (!identifier || !regToken) {
     return <Navigate to="/auth/sign-up" replace />;
   }
 
-  const pinMismatch = confirmPin.length === 4 && confirmPin !== pin;
+  const passwordError = password ? getPasswordError(password) : '';
+  const mismatch = confirmPassword !== '' && confirmPassword !== password;
   const canSubmit =
-    name.trim().length >= 2 && /^\d{4}$/.test(pin) && confirmPin === pin && consent;
+    name.trim().length >= 2 &&
+    !getPasswordError(password) &&
+    confirmPassword === password &&
+    consent;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -56,7 +63,7 @@ export default function CompleteRegistration() {
   return (
     <AuthLayout
       title="Almost there"
-      subtitle="Tell us your name and choose a 4-digit PIN to secure your account."
+      subtitle="Tell us your name and choose a password to secure your account."
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <TextField
@@ -69,30 +76,25 @@ export default function CompleteRegistration() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        <TextField
-          label="Create a PIN"
+        <PasswordField
+          label="Create a password"
           icon={Lock}
-          type="password"
-          inputMode="numeric"
           autoComplete="new-password"
-          maxLength={4}
-          placeholder="4 digits"
-          helper="Choose 4 digits you will remember."
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          placeholder="Password"
+          helper={`At least ${PASSWORD_MIN_LENGTH} characters.`}
+          error={passwordError}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
 
-        <TextField
-          label="Confirm your PIN"
+        <PasswordField
+          label="Confirm your password"
           icon={Lock}
-          type="password"
-          inputMode="numeric"
           autoComplete="new-password"
-          maxLength={4}
-          placeholder="4 digits"
-          error={pinMismatch ? 'PINs do not match.' : ''}
-          value={confirmPin}
-          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          placeholder="Password again"
+          error={mismatch ? 'Passwords do not match.' : ''}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
         <ConsentControl checked={consent} onChange={setConsent}>

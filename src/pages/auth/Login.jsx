@@ -4,30 +4,28 @@ import { useMutation } from '@tanstack/react-query';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
+import { parseIdentifier } from '@/lib/utils/identifier';
+import { getApiErrorMessage } from '@/lib/utils/errors';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import TextField from '@/components/ui/TextField';
+import PasswordField from '@/components/ui/PasswordField';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
-
-const getErrorMessage = (err) => {
-  if (!err.response) {
-    return 'We could not reach the server. Check your connection and try again.';
-  }
-  const apiError = err.response.data?.error;
-  if (apiError?.code === 'RATE_LIMITED') {
-    return 'Too many attempts. Please wait a moment and try again.';
-  }
-  return apiError?.message || 'Invalid credentials';
-};
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
-  const [credential, setCredential] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
-    mutationFn: () => authApi.login({ identifier: identifier.trim(), password: credential }),
+    mutationFn: () => {
+      const parsed = parseIdentifier(identifier);
+      return authApi.login({
+        identifier: parsed ? parsed.value : identifier.trim(),
+        password,
+      });
+    },
     onSuccess: (res) => {
       const { access_token, refresh_token, user } = res.data;
 
@@ -41,7 +39,7 @@ export default function Login() {
     },
   });
 
-  const canSubmit = identifier.trim() !== '' && credential !== '';
+  const canSubmit = identifier.trim() !== '' && password !== '';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -60,7 +58,7 @@ export default function Login() {
         <Card className="p-6">
           <h1 className="text-h2 font-bold text-navy-500">Welcome back</h1>
           <p className="mt-1 text-body2 text-navy-500/70">
-            Sign in with your phone number or email and your PIN.
+            Sign in with your phone number or email and your password.
           </p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
@@ -69,23 +67,24 @@ export default function Login() {
               icon={User}
               type="text"
               autoComplete="username"
-              placeholder="+234 803 456 7890"
+              placeholder="+234 803 456 7890 or you@example.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
             />
 
-            <TextField
-              label="PIN or password"
+            <PasswordField
+              label="Password"
               icon={Lock}
-              type="password"
               autoComplete="current-password"
-              placeholder="Enter your PIN"
-              value={credential}
-              onChange={(e) => setCredential(e.target.value)}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
 
             {loginMutation.isError && (
-              <FeedbackBanner tone="error">{getErrorMessage(loginMutation.error)}</FeedbackBanner>
+              <FeedbackBanner tone="error">
+                {getApiErrorMessage(loginMutation.error, 'Invalid credentials')}
+              </FeedbackBanner>
             )}
 
             <Button
