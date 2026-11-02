@@ -1,80 +1,122 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Plus, Briefcase } from 'lucide-react';
 import { useMyJobs, useUpdateJobStatus } from '@/lib/hooks/useEmployerJobs';
 import { JOB_STATUS } from '@/lib/utils/constants';
+import { unwrapList } from '@/lib/utils/api';
+import { getApiErrorMessage } from '@/lib/utils/errors';
 import JobCard from '@/features/employer/JobCard';
+import MarkFilledPrompt from '@/features/employer/MarkFilledPrompt';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import ErrorState from '@/components/shared/ErrorState';
 
-const postJobLink = (
-  <Link
-    to="/employer/jobs/new"
-    className="inline-flex items-center gap-2 rounded bg-teal-600 px-4 py-2 text-white hover:bg-teal-700"
-  >
-    <Plus size={18} /> Post a job
-  </Link>
-);
+const isStatus = (job, status) => String(job.status || '').toLowerCase() === status;
 
 export default function EmployerDashboard() {
-  const { data: jobs, isLoading, isError, refetch } = useMyJobs();
+  const [tab, setTab] = useState(JOB_STATUS.OPEN);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const { data, isLoading, isError, refetch } = useMyJobs();
   const updateStatus = useUpdateJobStatus();
 
-  const handleMarkFilled = (id) => {
-    updateStatus.mutate({ id, status: JOB_STATUS.FILLED });
+  const jobs = unwrapList(data);
+  const openJobs = jobs.filter((job) => isStatus(job, JOB_STATUS.OPEN));
+  const filledJobs = jobs.filter((job) => isStatus(job, JOB_STATUS.FILLED));
+  const visibleJobs = tab === JOB_STATUS.OPEN ? openJobs : filledJobs;
+
+  const handleConfirm = (job) => {
+    updateStatus.mutate(
+      { id: job.id, status: JOB_STATUS.FILLED },
+      { onSuccess: () => setSelectedJob(null) }
+    );
   };
+
+  const handleCancel = () => {
+    updateStatus.reset();
+    setSelectedJob(null);
+  };
+
+  const postJobButton = (
+    <Button to="/employer/jobs/new" leftIcon={Plus}>
+      Post a job
+    </Button>
+  );
+
+  const tabs = [
+    { id: JOB_STATUS.OPEN, label: 'Open jobs', count: openJobs.length },
+    { id: JOB_STATUS.FILLED, label: 'Filled jobs', count: filledJobs.length },
+  ];
 
   let content;
   if (isLoading) {
     content = <LoadingSpinner label="Loading your jobs..." />;
   } else if (isError) {
     content = <ErrorState message="We could not load your jobs." onRetry={refetch} />;
-  } else if (!jobs || jobs.length === 0) {
-    content = (
-      <EmptyState
-        icon={Briefcase}
-        title="No jobs posted yet"
-        message="Post your first job and skilled workers will be able to find it."
-        action={postJobLink}
-      />
-    );
+  } else if (visibleJobs.length === 0) {
+    content =
+      tab === JOB_STATUS.OPEN ? (
+        <EmptyState
+          icon={Briefcase}
+          title="Your first job starts here"
+          message="The workers who match your trade will see it."
+          action={postJobButton}
+        />
+      ) : (
+        <EmptyState
+          icon={Briefcase}
+          title="No filled jobs yet"
+          message="Jobs you mark as filled will show up here."
+        />
+      );
   } else {
     content = (
-      <div className="space-y-4">
-        {jobs.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            onMarkFilled={handleMarkFilled}
-            isUpdating={updateStatus.isPending && updateStatus.variables?.id === job.id}
-          />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {visibleJobs.map((job) => (
+          <JobCard key={job.id} job={job} onMarkFilled={setSelectedJob} />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 text-left md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">My Jobs</h1>
-        <div className="flex gap-3">
-          <Link
-            to="/employer/search"
-            className="rounded bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
-          >
-            Find workers
-          </Link>
-          {postJobLink}
-        </div>
+    <div className="text-left">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-h2 font-bold text-navy-500">My jobs</h1>
+        {postJobButton}
       </div>
 
-      {updateStatus.isError && (
-        <p role="alert" className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">
-          Could not update the job. Please try again.
-        </p>
-      )}
+      <div role="tablist" className="mb-5 flex gap-1 rounded-lg border border-navy-50 bg-white p-1">
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            onClick={() => setTab(item.id)}
+            className={`flex-1 rounded-md px-3 py-2 text-body2 font-medium transition-colors ${
+              tab === item.id
+                ? 'bg-ochre-100 text-navy-500'
+                : 'text-navy-500/70 hover:bg-cream'
+            }`}
+          >
+            {item.label} ({item.count})
+          </button>
+        ))}
+      </div>
 
       {content}
+
+      <MarkFilledPrompt
+        job={selectedJob}
+        loading={updateStatus.isPending}
+        error={
+          updateStatus.isError
+            ? getApiErrorMessage(updateStatus.error, 'Could not update the job. Please try again.')
+            : ''
+        }
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

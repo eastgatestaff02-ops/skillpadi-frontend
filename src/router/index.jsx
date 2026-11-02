@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
@@ -27,6 +27,21 @@ const ApprenticeListings = lazy(() => import('@/pages/apprentice/Listings'));
 const Apply = lazy(() => import('@/pages/apprentice/Apply'));
 const MyApplications = lazy(() => import('@/pages/apprentice/MyApplications'));
 
+const Preview = lazy(() => import('@/pages/dev/Preview'));
+
+const devRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: '/dev/preview',
+        element: (
+          <Suspense fallback={null}>
+            <Preview />
+          </Suspense>
+        ),
+      },
+    ]
+  : [];
+
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/auth/login" replace /> },
   { path: '/register', element: <Navigate to="/auth/signup" replace /> },
@@ -39,6 +54,8 @@ export const router = createBrowserRouter([
   { path: '/auth/select-role', element: <SelectRole /> },
 
   { path: '/profile/:id', element: <PublicProfile /> },
+
+  ...devRoutes,
 
   {
     element: <ProtectedRoute />,

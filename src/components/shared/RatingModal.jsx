@@ -1,60 +1,99 @@
 import { useState } from 'react';
-import { Star } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
+import { CheckCircle2 } from 'lucide-react';
+import { useSubmitReview } from '@/lib/hooks/useReviews';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import StarRating from '@/components/ui/StarRating';
+import TextAreaField from '@/components/ui/TextAreaField';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
-export default function RatingModal({ isOpen, onClose, jobId, revieweeId, revieweeName }) {
+const MAX_LENGTH = 500;
+
+function RatingForm({ jobId, revieweeId, revieweeName, onClose }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitReview = useSubmitReview();
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      await apiClient.post('/api/reviews', { jobId, revieweeId, rating, comment });
-      alert('Review submitted successfully!');
-      onClose();
-    } catch (err) {
-      alert('Failed to submit review.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (rating === 0 || submitReview.isPending) return;
+    submitReview.mutate({ jobId, revieweeId, rating, comment: comment.trim() });
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h2 className="text-xl font-bold mb-2 text-gray-900">Rate {revieweeName}</h2>
-        <p className="text-gray-500 text-sm mb-4">How was your experience working together?</p>
-
-        <div className="flex justify-center gap-2 mb-4">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button key={star} onClick={() => setRating(star)} className="focus:outline-none hover:scale-110 transition">
-              <Star size={36} className={star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
-            </button>
-          ))}
-        </div>
-
-        <textarea 
-          placeholder="Leave a comment (optional)..." 
-          maxLength={500}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          className="w-full border p-3 rounded-lg mb-4 h-24 resize-none focus:ring-teal-500"
-        />
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200">Cancel</button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={rating === 0 || isSubmitting}
-            className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit'}
-          </button>
-        </div>
+  if (submitReview.isSuccess) {
+    return (
+      <div className="text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success-50">
+          <CheckCircle2 size={28} className="text-success-500" />
+        </span>
+        <p className="mt-3 text-h3 font-bold text-navy-500">Review submitted</p>
+        <p className="mt-1 text-body2 text-navy-500/70">
+          Thank you for sharing your experience.
+        </p>
+        <Button fullWidth className="mt-6" onClick={onClose}>
+          Done
+        </Button>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <p className="text-body2 text-navy-500/70">
+        Share your experience working with {revieweeName}.
+      </p>
+
+      <div>
+        <p className="mb-1.5 text-caption font-bold text-navy-500">How was your experience?</p>
+        <StarRating value={rating} onChange={setRating} />
+        <p className="mt-1.5 text-caption text-navy-500/70">
+          Choose 1 to 5 stars. 1 is poor, 5 is excellent.
+        </p>
+      </div>
+
+      <TextAreaField
+        label="Written review (optional)"
+        labelRight={`${comment.length}/${MAX_LENGTH}`}
+        placeholder="What went well? What could improve?"
+        helper="Keep your review honest and respectful."
+        maxLength={MAX_LENGTH}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+      />
+
+      {submitReview.isError && (
+        <FeedbackBanner tone="error">
+          {getApiErrorMessage(submitReview.error, 'Could not submit your review. Please try again.')}
+        </FeedbackBanner>
+      )}
+
+      <div className="space-y-3">
+        <Button
+          type="submit"
+          fullWidth
+          loading={submitReview.isPending}
+          disabled={rating === 0}
+        >
+          Submit review
+        </Button>
+        <Button variant="outlined" fullWidth onClick={onClose} disabled={submitReview.isPending}>
+          Maybe later
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default function RatingModal({ isOpen, onClose, jobId, revieweeId, revieweeName }) {
+  return (
+    <Modal open={isOpen} onClose={onClose} title={`Rate ${revieweeName}`}>
+      <RatingForm
+        jobId={jobId}
+        revieweeId={revieweeId}
+        revieweeName={revieweeName}
+        onClose={onClose}
+      />
+    </Modal>
   );
 }
