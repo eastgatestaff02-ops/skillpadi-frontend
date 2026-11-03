@@ -265,7 +265,7 @@ export default function WorkerProfile() {
       />
 
       <DetailsSection key={profile.id || 'me'} profile={profile} />
-      <PhotosSection photos={photos} />
+      <PhotosSection photos={photos} />      
       <MyReviews workerId={profile.id} />
     </div>
   );
