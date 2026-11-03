@@ -33,7 +33,7 @@ export default function EmployerDashboard() {
 
   let content;
   if (isLoading) {
-    content = <LoadingSpinner label="Loading your jobs..." />;
+    content = <LoadingSpinner label="Loading your jobs..." variant="cards" />;
   } else if (isError) {
     content = <ErrorState message="We could not load your jobs." onRetry={refetch} />;
   } else if (visibleJobs.length === 0) {

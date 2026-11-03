@@ -38,7 +38,7 @@ export default function JobDetail() {
   const [completed, setCompleted] = useState(null);
   const [ratingTarget, setRatingTarget] = useState(null);
 
-  if (isLoading) return <LoadingSpinner label="Loading job..." />;
+  if (isLoading) return <LoadingSpinner label="Loading job..." variant="profile" />; 
 
   if (isError || !job) {
     return <ErrorState message="We could not load this job." onRetry={refetch} />;

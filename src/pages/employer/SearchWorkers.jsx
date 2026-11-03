@@ -60,7 +60,7 @@ export default function SearchWorkers() {
 
   let content;
   if (isLoading) {
-    content = <LoadingSpinner label="Finding workers..." />;
+     content = <LoadingSpinner label="Finding workers..." variant="cards" />;
   } else if (isError) {
     content = <ErrorState message="We could not load workers." onRetry={refetch} />;
   } else if (workers.length === 0) {

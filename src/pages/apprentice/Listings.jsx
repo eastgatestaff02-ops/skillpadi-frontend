@@ -37,7 +37,7 @@ export default function ApprenticeListings() {
 
   let content;
   if (isLoading) {
-    content = <LoadingSpinner label="Finding apprenticeships..." />;
+    content = <LoadingSpinner label="Finding apprenticeships..." variant="cards" />;
   } else if (isError) {
     content = <ErrorState message="We could not load the listings." onRetry={refetch} />;
   } else if (listings.length === 0) {

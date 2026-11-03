@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { User, Phone, MapPin, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useListing } from '@/lib/hooks/useListings';
 import { useApply } from '@/lib/hooks/useApplications';

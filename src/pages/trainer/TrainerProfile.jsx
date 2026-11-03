@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { ArrowLeft } from 'lucide-react';
 import { useTrainerProfile, useUpdateTrainerProfile } from '@/lib/hooks/useTrainer';
 import { useTrades } from '@/lib/hooks/useCatalog';
@@ -19,7 +19,7 @@ function TrainerProfileForm({ profile }) {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -30,7 +30,8 @@ function TrainerProfileForm({ profile }) {
     },
   });
 
-  const bioLength = (watch('bio') || '').length;
+  const bio = useWatch({ control, name: 'bio' });
+  const bioLength = (bio || '').length;
 
   const onSubmit = (values) => {
     updateProfile.mutate({

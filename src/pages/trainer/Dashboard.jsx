@@ -34,7 +34,7 @@ export default function TrainerDashboard() {
 
   let applicantsContent;
   if (isLoading) {
-    applicantsContent = <LoadingSpinner label="Loading applicants..." />;
+    applicantsContent = <LoadingSpinner label="Loading applicants..." variant="list"/>;
   } else if (isError) {
     applicantsContent = (
       <ErrorState message="We could not load your applicants." onRetry={refetch} />

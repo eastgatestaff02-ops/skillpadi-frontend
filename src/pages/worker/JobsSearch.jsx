@@ -59,7 +59,7 @@ export default function JobsSearch() {
 
   let content;
   if (isLoading) {
-    content = <LoadingSpinner label="Finding jobs..." />;
+    content = <LoadingSpinner label="Finding jobs..." variant="list" />;
   } else if (isError) {
     content = <ErrorState message="We could not load jobs." onRetry={refetch} />;
   } else if (jobs.length === 0) {
