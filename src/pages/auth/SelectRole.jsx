@@ -5,6 +5,8 @@ import { Wrench, Briefcase, BookOpen, Users, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
 import { getApiErrorMessage } from '@/lib/utils/errors';
+import { unwrapData } from '@/lib/utils/api';
+import { normalizeUser } from '@/lib/utils/user';
 import AuthLayout from '@/components/layout/AuthLayout';
 import Button from '@/components/ui/Button';
 import RoleCard from '@/components/ui/RoleCard';
@@ -16,7 +18,7 @@ const roleOptions = [
     title: 'Worker',
     description: 'Show your skills and find work.',
     icon: Wrench,
-    apiRole: 'worker',
+    apiRole: 'WORKER',
     next: '/worker/profile',
   },
   {
@@ -24,7 +26,7 @@ const roleOptions = [
     title: 'Employer',
     description: 'Find the right person for your job.',
     icon: Briefcase,
-    apiRole: 'employer',
+    apiRole: 'EMPLOYER',
     next: '/employer/search',
   },
   {
@@ -32,7 +34,7 @@ const roleOptions = [
     title: 'Apprentice',
     description: 'Learn a trade with a trainer.',
     icon: BookOpen,
-    apiRole: 'apprentice',
+    apiRole: 'APPRENTICE',
     next: '/apprentice/dashboard',
   },
   {
@@ -40,7 +42,7 @@ const roleOptions = [
     title: 'Trainer',
     description: 'Share your experience. Train others.',
     icon: Users,
-    apiRole: 'worker',
+    apiRole: 'WORKER',
     next: '/trainer/profile',
   },
 ];
@@ -48,12 +50,15 @@ const roleOptions = [
 export default function SelectRole() {
   const [selectedId, setSelectedId] = useState(null);
   const navigate = useNavigate();
-  const { user, setUser, setMode } = useAuthStore();
+  const { user, setUser, setMode, setAccessToken } = useAuthStore();
 
   const mutation = useMutation({
     mutationFn: (option) => authApi.updateRole(option.apiRole),
-    onSuccess: (_, option) => {
-      setUser({ ...user, role: option.apiRole });
+    onSuccess: (res, option) => {
+      const data = unwrapData(res.data);
+      if (data.accessToken) setAccessToken(data.accessToken);
+      const updated = normalizeUser({ ...user, roles: data.roles || [option.apiRole] });
+      setUser({ ...updated, role: option.apiRole.toLowerCase() });
       setMode(option.id === 'trainer' ? 'trainer' : null);
       navigate(option.next, { replace: true });
     },

@@ -8,6 +8,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://skillpadi-backend-staging.onrender.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   resolve: {
     alias: {

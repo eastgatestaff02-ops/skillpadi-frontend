@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { parseIdentifier, identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
-import { getPasswordError, PASSWORD_MIN_LENGTH } from '@/lib/utils/password';
+import { getPinError, PIN_MIN_LENGTH, PIN_MAX_LENGTH } from '@/lib/utils/pin';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { getRegistrationDraft, setRegistrationDraft } from '@/lib/store/registrationDraft';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -17,29 +17,25 @@ import FeedbackBanner from '@/components/ui/FeedbackBanner';
 export default function Signup() {
   const draft = getRegistrationDraft();
   const [value, setValue] = useState(draft ? formatIdentifier(draft.identifier) : '');
-  const [name, setName] = useState(draft?.name || '');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
-  const identifier = parseIdentifier(value);
-  const isValid = Boolean(
-    identifier && name.trim().length >= 2 && !getPasswordError(password) && consent
-  );
+  const parsed = parseIdentifier(value);
+  const identifier = parsed?.type === 'phone' ? parsed : null;
+  const pinError = getPinError(pin);
+  const isValid = Boolean(identifier && !pinError && consent);
 
   const identifierError =
-    submitted && !identifier
-      ? 'Enter a phone number (+234 followed by 10 digits) or a valid email.'
-      : '';
-  const nameError = submitted && name.trim().length < 2 ? 'Enter your full name.' : '';
-  const passwordError = submitted ? getPasswordError(password) : '';
+    submitted && !identifier ? 'Enter a phone number: +234 followed by 10 digits.' : '';
+  const pinMessage = submitted ? pinError : '';
   const consentError = submitted && !consent ? 'Please agree to continue.' : '';
 
   const requestOtp = useMutation({
-    mutationFn: (parsed) => authApi.requestOtp(identifierPayload(parsed)),
-    onSuccess: (_, parsed) => {
-      setRegistrationDraft({ identifier: parsed, name: name.trim(), password });
+    mutationFn: (phone) => authApi.requestOtp(identifierPayload(phone)),
+    onSuccess: (_, phone) => {
+      setRegistrationDraft({ identifier: phone, pin });
       navigate('/auth/register/verify');
     },
   });
@@ -54,7 +50,7 @@ export default function Signup() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Fill in your details. We'll send a code to confirm it's you."
+      subtitle="Enter your phone number. We'll send a code to confirm it's you."
       footer={
         <>
           Already have an account?{' '}
@@ -66,36 +62,27 @@ export default function Signup() {
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <TextField
-          label="Phone number or email"
+          label="Phone number"
           icon={User}
-          type="text"
-          autoComplete="username"
-          placeholder="+234 801 234 5678 or you@example.com"
+          type="tel"
+          autoComplete="tel"
+          placeholder="+234 801 234 5678"
           error={identifierError}
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
 
-        <TextField
-          label="Full name"
-          icon={User}
-          type="text"
-          autoComplete="name"
-          placeholder="e.g. Adewale Okafor"
-          error={nameError}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
         <PasswordField
-          label="Password"
+          label="PIN"
           icon={Lock}
+          inputMode="numeric"
           autoComplete="new-password"
-          placeholder="Create a password"
-          helper={`At least ${PASSWORD_MIN_LENGTH} characters.`}
-          error={passwordError}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          maxLength={PIN_MAX_LENGTH}
+          placeholder="Create a PIN"
+          helper={`${PIN_MIN_LENGTH} to ${PIN_MAX_LENGTH} digits. You will use it to sign in.`}
+          error={pinMessage}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH))}
         />
 
         <ConsentControl
@@ -103,7 +90,7 @@ export default function Signup() {
           onChange={setConsent}
           error={consentError}
           onReadNotice={() => window.open('/privacy', '_blank', 'noopener')}
-          >
+        >
           I consent to SkillPadi using my personal data to create and manage my account.
         </ConsentControl>
 

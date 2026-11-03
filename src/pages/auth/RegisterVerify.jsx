@@ -5,6 +5,7 @@ import { Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
 import { unwrapData } from '@/lib/utils/api';
+import { normalizeUser } from '@/lib/utils/user';
 import { identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { getRegistrationDraft, clearRegistrationDraft } from '@/lib/store/registrationDraft';
@@ -23,10 +24,7 @@ const formatCountdown = (seconds) => {
 };
 
 const getOtpMessage = (err) => {
-  const code = err.response?.data?.error?.code;
-  if (code === 'OTP_INVALID') return 'Code incorrect. Try again.';
-  if (code === 'OTP_EXPIRED') return 'Code expired. Please request a new one.';
-  if (code === 'OTP_ATTEMPTS_EXCEEDED') return 'Too many attempts. Try again later.';
+  if (err.response?.status === 400) return 'Code incorrect or expired. Try again.';
   return getApiErrorMessage(err, 'Verification failed. Please try again.');
 };
 
@@ -46,20 +44,17 @@ export default function RegisterVerify() {
 
   const verifyMutation = useMutation({
     mutationFn: async () => {
-      const payload = identifierPayload(draft.identifier);
-      const verified = await authApi.verifyOtp({ ...payload, otp });
-      const { registration_token: registrationToken } = unwrapData(verified.data);
+      const { phone } = identifierPayload(draft.identifier);
+      const verified = await authApi.verifyOtp({ phone, code: otp });
+      const { registrationToken } = unwrapData(verified.data);
       const completed = await authApi.completeRegistration({
-        ...payload,
-        otp_token: registrationToken,
-        name: draft.name,
-        password: draft.password,
+        registrationToken,
+        pin: draft.pin,
       });
       return unwrapData(completed.data);
     },
     onSuccess: (data) => {
-      const { access_token, refresh_token, user } = data;
-      setAuth(access_token, refresh_token, user);
+      setAuth(data.accessToken, data.refreshToken, normalizeUser(data.user));
       clearRegistrationDraft();
       navigate('/auth/select-role');
     },

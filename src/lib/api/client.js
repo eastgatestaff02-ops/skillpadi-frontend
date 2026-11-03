@@ -58,20 +58,18 @@ apiClient.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
 
-        const res = await axios.post(`${BASE_URL}/api/auth/refresh`, {
-          refresh_token: refreshToken,
-        });
+        const res = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
         const data = unwrapData(res.data);
 
-        localStorage.setItem('access_token', data.access_token);
-        if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+        localStorage.setItem('access_token', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
         useAuthStore.setState({
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token || refreshToken,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken || refreshToken,
         });
 
-        processQueue(null, data.access_token);
-        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+        processQueue(null, data.accessToken);
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
