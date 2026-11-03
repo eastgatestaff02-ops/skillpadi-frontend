@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
+import GuestRoute from '@/components/shared/GuestRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import AppFrame from '@/components/shared/AppFrame';
 
@@ -9,6 +10,7 @@ import Signup from '@/pages/auth/Signup';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
 import SelectRole from '@/pages/auth/SelectRole';
 import PublicProfile from '@/pages/shared/PublicProfile';
+import NotFound from '@/pages/shared/NotFound';
 
 const WorkerDashboard = lazy(() => import('@/pages/worker/Dashboard'));
 const WorkerProfile = lazy(() => import('@/pages/worker/Profile'));
@@ -50,8 +52,13 @@ export const router = createBrowserRouter([
   { path: '/auth/login', element: <Navigate to="/auth/sign-in" replace /> },
   { path: '/auth/signup', element: <Navigate to="/auth/sign-up" replace /> },
 
-  { path: '/auth/sign-in', element: <Login /> },
-  { path: '/auth/sign-up', element: <Signup /> },
+  {
+    element: <GuestRoute />,
+    children: [
+      { path: '/auth/sign-in', element: <Login /> },
+      { path: '/auth/sign-up', element: <Signup /> },
+    ],
+  },
   { path: '/auth/register/verify', element: <RegisterVerify /> },
   { path: '/auth/select-role', element: <SelectRole /> },
 
@@ -113,5 +120,5 @@ export const router = createBrowserRouter([
     ],
   },
 
-  { path: '*', element: <div className="p-8 text-center text-red-500">404 - Page Not Found</div> },
+  { path: '*', element: <NotFound /> },
 ]);

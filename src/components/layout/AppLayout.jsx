@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/lib/store/authStore';
+import { authApi } from '@/lib/api/auth';
 import {
   Home,
   User,
@@ -37,9 +38,14 @@ export default function AppLayout() {
   const homePath = links.length > 0 ? links[0].to : '/auth/select-role';
   const displayName = user?.firstName || user?.name || user?.phone;
 
-  const handleLogout = () => {
-    logout();
-    navigate('/auth/sign-in');
+    const handleLogout = () => {
+    authApi
+      .logout()
+      .catch(() => undefined)
+      .finally(() => {
+        logout();
+        navigate('/auth/sign-in');
+      });
   };
 
   return (

@@ -11,7 +11,7 @@ export const authApi = {
   login: (data) => apiClient.post('/api/auth/login', data), // { identifier, password/pin }
   
   
-  logout: () => apiClient.post('/api/auth/logout'),
+  logout: () => apiClient.post('/api/auth/logout', null, { timeout: 3000 }),
   getMe: () => apiClient.get('/api/me'),
   updateRole: (role) => apiClient.post('/api/me/roles', { role }),
 };
