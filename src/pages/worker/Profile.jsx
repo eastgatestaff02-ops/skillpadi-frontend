@@ -9,6 +9,7 @@ import {
 } from '@/lib/hooks/useWorker';
 import { useTrades, useStates, useSkills } from '@/lib/hooks/useCatalog';
 import { getApiErrorMessage } from '@/lib/utils/errors';
+import MyReviews from '@/features/worker/MyReviews';
 import CompletenessCard from '@/features/worker/CompletenessCard';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -172,7 +173,7 @@ function PhotosSection({ photos }) {
       const compressed = await imageCompression(file, {
         maxSizeMB: 0.1,
         maxWidthOrHeight: 1000,
-        useWebWorker: true,
+        useWebWorker: false,
       });
       const formData = new FormData();
       formData.append('image', compressed, file.name);
@@ -265,6 +266,7 @@ export default function WorkerProfile() {
 
       <DetailsSection key={profile.id || 'me'} profile={profile} />
       <PhotosSection photos={photos} />
+      <MyReviews workerId={profile.id} />
     </div>
   );
 }

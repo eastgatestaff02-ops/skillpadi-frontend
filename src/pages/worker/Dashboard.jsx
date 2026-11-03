@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Briefcase, ClipboardList } from 'lucide-react';
+import { User, Briefcase, ClipboardList, Star } from 'lucide-react';
 import { jobsApi } from '@/lib/api/jobs';
 import { unwrapList } from '@/lib/utils/api';
 import { queryDefaults } from '@/lib/utils/network';
 import Card from '@/components/ui/Card';
 import Chip from '@/components/ui/Chip';
 import Button from '@/components/ui/Button';
+import RatingModal from '@/components/shared/RatingModal';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import ErrorState from '@/components/shared/ErrorState';
@@ -35,13 +37,12 @@ const shortcuts = [
   },
 ];
 
+const FINISHED_JOB = ['filled', 'completed'];
+
 export default function WorkerDashboard() {
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
+  const [ratingTarget, setRatingTarget] = useState(null);
+
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['myApplications'],
     queryFn: () => jobsApi.getMyApplications().then((res) => unwrapList(res.data)),
     ...queryDefaults,
@@ -72,19 +73,46 @@ export default function WorkerDashboard() {
       <Card className="divide-y divide-navy-50 p-0">
         {applications.map((application) => {
           const status = String(application.status || '').toLowerCase();
+          const jobStatus = String(application.job?.status || '').toLowerCase();
+          const employerId = application.job?.employer?.id ?? application.job?.employerId;
           const employer =
             application.job?.employer?.companyName || application.job?.employer?.name;
+          const canRate =
+            status === 'accepted' && FINISHED_JOB.includes(jobStatus) && !!employerId;
+
           return (
-            <div key={application.id} className="flex items-center justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <p className="truncate text-body2 font-bold text-navy-500">
-                  {application.job?.title || 'Job'}
-                </p>
-                {employer && (
-                  <p className="truncate text-caption text-navy-500/70">{employer}</p>
+            <div key={application.id} className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-body2 font-bold text-navy-500">
+                    {application.job?.title || 'Job'}
+                  </p>
+                  {employer && (
+                    <p className="truncate text-caption text-navy-500/70">{employer}</p>
+                  )}
+                </div>
+                {status && (
+                  <Chip tone={statusTone[status] || 'neutral'}>{capitalise(status)}</Chip>
                 )}
               </div>
-              {status && <Chip tone={statusTone[status] || 'neutral'}>{capitalise(status)}</Chip>}
+
+              {canRate && (
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  leftIcon={Star}
+                  className="mt-3"
+                  onClick={() =>
+                    setRatingTarget({
+                      jobId: application.job.id,
+                      employerId,
+                      employerName: employer || 'the employer',
+                    })
+                  }
+                >
+                  Rate employer
+                </Button>
+              )}
             </div>
           );
         })}
@@ -117,6 +145,14 @@ export default function WorkerDashboard() {
 
       <h2 className="mb-3 mt-8 text-h3 font-bold text-navy-500">My applications</h2>
       {content}
+
+      <RatingModal
+        isOpen={!!ratingTarget}
+        onClose={() => setRatingTarget(null)}
+        jobId={ratingTarget?.jobId}
+        revieweeId={ratingTarget?.employerId}
+        revieweeName={ratingTarget?.employerName}
+      />
     </div>
   );
 }
