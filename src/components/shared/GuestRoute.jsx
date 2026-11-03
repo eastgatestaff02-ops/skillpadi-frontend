@@ -1,10 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/lib/store/authStore';
+import { homePathFor } from '@/lib/utils/routes';
 
 export default function GuestRoute() {
-  const { accessToken, user } = useAuthStore();
+  const { accessToken, user, mode } = useAuthStore();
 
   if (!accessToken) return <Outlet />;
 
-  return <Navigate to={user?.role ? `/${user.role}/dashboard` : '/auth/select-role'} replace />;
+  return <Navigate to={homePathFor(user, mode)} replace />;
 }

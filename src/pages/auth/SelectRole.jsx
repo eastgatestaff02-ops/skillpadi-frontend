@@ -48,13 +48,13 @@ const roleOptions = [
 export default function SelectRole() {
   const [selectedId, setSelectedId] = useState(null);
   const navigate = useNavigate();
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, setMode } = useAuthStore();
 
   const mutation = useMutation({
     mutationFn: (option) => authApi.updateRole(option.apiRole),
     onSuccess: (_, option) => {
       setUser({ ...user, role: option.apiRole });
-      navigate(option.next);
+      navigate(option.id);
     },
   });
 

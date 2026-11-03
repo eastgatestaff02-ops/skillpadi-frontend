@@ -7,6 +7,7 @@ import AppFrame from '@/components/shared/AppFrame';
 
 import Login from '@/pages/auth/Login';
 import Signup from '@/pages/auth/Signup';
+import Privacy from '@/pages/shared/Privacy';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
 import SelectRole from '@/pages/auth/SelectRole';
 import PublicProfile from '@/pages/shared/PublicProfile';
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
   { path: '/auth/select-role', element: <SelectRole /> },
 
   { path: '/profile/:id', element: <PublicProfile /> },
+  { path : '/privacy', element: <Privacy /> },
 
   ...devRoutes,
 

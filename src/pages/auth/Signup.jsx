@@ -98,7 +98,12 @@ export default function Signup() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <ConsentControl checked={consent} onChange={setConsent} error={consentError}>
+        <ConsentControl
+          checked={consent}
+          onChange={setConsent}
+          error={consentError}
+          onReadNotice={() => window.open('/privacy', '_blank', 'noopener')}
+          >
           I consent to SkillPadi using my personal data to create and manage my account.
         </ConsentControl>
 

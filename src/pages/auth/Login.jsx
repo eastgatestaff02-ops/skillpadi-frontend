@@ -6,6 +6,8 @@ import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
 import { parseIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
+import { unwrapData } from '@/lib/utils/api';
+import { homePathFor } from '@/lib/utils/routes';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import TextField from '@/components/ui/TextField';
@@ -27,15 +29,10 @@ export default function Login() {
       });
     },
     onSuccess: (res) => {
-      const { access_token, refresh_token, user } = res.data;
+      const { access_token, refresh_token, user } = unwrapData(res.data);
 
       setAuth(access_token, refresh_token, user);
-
-      if (!user.role) {
-        navigate('/auth/select-role');
-      } else {
-        navigate(`/${user.role}/dashboard`);
-      }
+      navigate(homePathFor(user, useAuthStore.getState().mode));
     },
   });
 
