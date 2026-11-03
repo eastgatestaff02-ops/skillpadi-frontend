@@ -23,7 +23,7 @@ export default function MyApplications() {
 
   let content;
   if (isLoading) {
-    content = <LoadingSpinner label="Loading your applications..." />;
+    content = <LoadingSpinner label="Loading your applications..." variant="list" />;
   } else if (isError) {
     content = <ErrorState message="We could not load your applications." onRetry={refetch} />;
   } else if (applications.length === 0) {

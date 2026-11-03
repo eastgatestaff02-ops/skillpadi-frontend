@@ -95,7 +95,7 @@ export default function PublicProfile() {
   let body;
 
   if (isLoading) {
-    body = <LoadingSpinner label="Loading profile..." />;
+    body = <LoadingSpinner label="Loading profile..." variant="profile" />;
   } else if (isError || !profile) {
     body = <ErrorState message="We could not load this profile." onRetry={refetch} />;
   } else {
@@ -220,6 +220,7 @@ export default function PublicProfile() {
                   key={src}
                   src={src}
                   alt="Previous work"
+                  loading="lazy"
                   className="aspect-square w-full rounded-lg object-cover"
                 />
               ))}

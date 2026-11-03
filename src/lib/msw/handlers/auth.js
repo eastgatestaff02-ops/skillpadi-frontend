@@ -9,7 +9,11 @@ const users = [
   { id: 'user-apprentice', name: 'Demo Apprentice', phone: '+2348000000003', email: 'apprentice@demo.com', role: 'apprentice', password: DEMO_PASSWORD },
 ];
 
-const publicUser = ({ password, ...rest }) => rest;
+const publicUser = (user) => {
+  const copy = { ...user };
+  delete copy.password;
+  return copy;
+};
 
 const tokensFor = (user) => ({
   access_token: `mock-access-${user.id}`,
