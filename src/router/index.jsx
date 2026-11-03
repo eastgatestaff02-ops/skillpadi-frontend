@@ -7,7 +7,6 @@ import AppFrame from '@/components/shared/AppFrame';
 import Login from '@/pages/auth/Login';
 import Signup from '@/pages/auth/Signup';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
-import CompleteRegistration from '@/pages/auth/CompleteRegistration';
 import SelectRole from '@/pages/auth/SelectRole';
 import PublicProfile from '@/pages/shared/PublicProfile';
 
@@ -47,13 +46,13 @@ export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/auth/sign-in" replace /> },
   { path: '/register', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/register', element: <Navigate to="/auth/sign-up" replace /> },
+  { path: '/auth/register/complete', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/login', element: <Navigate to="/auth/sign-in" replace /> },
   { path: '/auth/signup', element: <Navigate to="/auth/sign-up" replace /> },
 
   { path: '/auth/sign-in', element: <Login /> },
   { path: '/auth/sign-up', element: <Signup /> },
   { path: '/auth/register/verify', element: <RegisterVerify /> },
-  { path: '/auth/register/complete', element: <CompleteRegistration /> },
   { path: '/auth/select-role', element: <SelectRole /> },
 
   { path: '/profile/:id', element: <PublicProfile /> },

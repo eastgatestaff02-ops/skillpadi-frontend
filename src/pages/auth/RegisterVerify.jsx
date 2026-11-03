@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
-import {
-  identifierPayload,
-  formatIdentifier,
-  readRegistrationIdentifier,
-} from '@/lib/utils/identifier';
+import { useAuthStore } from '@/lib/store/authStore';
+import { identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
+import { getRegistrationDraft, clearRegistrationDraft } from '@/lib/store/registrationDraft';
 import AuthLayout from '@/components/layout/AuthLayout';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -36,9 +34,8 @@ export default function RegisterVerify() {
   const [errorMsg, setErrorMsg] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const identifier = location.state?.identifier || readRegistrationIdentifier();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const draft = getRegistrationDraft();
 
   useEffect(() => {
     if (secondsLeft <= 0) return undefined;
@@ -47,18 +44,28 @@ export default function RegisterVerify() {
   }, [secondsLeft]);
 
   const verifyMutation = useMutation({
-    mutationFn: () => authApi.verifyOtp({ ...identifierPayload(identifier), otp }),
-    onSuccess: (res) => {
-      if (res.data.registration_token) {
-        localStorage.setItem('reg_token', res.data.registration_token);
-      }
-      navigate('/auth/register/complete');
+    mutationFn: async () => {
+      const payload = identifierPayload(draft.identifier);
+      const verified = await authApi.verifyOtp({ ...payload, otp });
+      const completed = await authApi.completeRegistration({
+        ...payload,
+        otp_token: verified.data.registration_token,
+        name: draft.name,
+        password: draft.password,
+      });
+      return completed.data;
+    },
+    onSuccess: (data) => {
+      const { access_token, refresh_token, user } = data;
+      setAuth(access_token, refresh_token, user);
+      clearRegistrationDraft();
+      navigate('/auth/select-role');
     },
     onError: (err) => setErrorMsg(getOtpMessage(err)),
   });
 
   const resendMutation = useMutation({
-    mutationFn: () => authApi.requestOtp(identifierPayload(identifier)),
+    mutationFn: () => authApi.requestOtp(identifierPayload(draft.identifier)),
     onSuccess: () => {
       setSecondsLeft(RESEND_SECONDS);
       setOtp('');
@@ -66,7 +73,7 @@ export default function RegisterVerify() {
     },
   });
 
-  if (!identifier) {
+  if (!draft) {
     return <Navigate to="/auth/sign-up" replace />;
   }
 
@@ -84,7 +91,7 @@ export default function RegisterVerify() {
       subtitle="Enter the 6-digit code we sent you."
       footer={
         <Link to="/auth/sign-up" className="font-bold text-ochre-900 hover:underline">
-          Change phone number or email
+          Change my details
         </Link>
       }
     >
@@ -98,7 +105,7 @@ export default function RegisterVerify() {
           maxLength={6}
           placeholder="000000"
           inputClassName="tracking-[0.4em]"
-          helper={`Sent to ${formatIdentifier(identifier)}`}
+          helper={`Sent to ${formatIdentifier(draft.identifier)}`}
           error={errorMsg}
           value={otp}
           onChange={(e) => {
@@ -115,7 +122,7 @@ export default function RegisterVerify() {
           disabled={!canSubmit}
           rightIcon={ArrowRight}
         >
-          Verify
+          Verify and create account
         </Button>
       </form>
 
