@@ -4,7 +4,6 @@ import { useMutation } from '@tanstack/react-query';
 import { Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
-import { unwrapData } from '/@lib/utils/api';
 import { identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { getRegistrationDraft, clearRegistrationDraft } from '@/lib/store/registrationDraft';
