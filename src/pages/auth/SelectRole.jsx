@@ -54,7 +54,8 @@ export default function SelectRole() {
     mutationFn: (option) => authApi.updateRole(option.apiRole),
     onSuccess: (_, option) => {
       setUser({ ...user, role: option.apiRole });
-      navigate(option.id);
+      setMode(option.id === 'trainer' ? 'trainer' : null);
+      navigate(option.next, { replace: true });
     },
   });
 

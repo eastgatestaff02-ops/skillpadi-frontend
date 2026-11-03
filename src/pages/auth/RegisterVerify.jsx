@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
+import { unwrapData } from '@/lib/utils/api';
 import { identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { getRegistrationDraft, clearRegistrationDraft } from '@/lib/store/registrationDraft';
@@ -47,13 +48,14 @@ export default function RegisterVerify() {
     mutationFn: async () => {
       const payload = identifierPayload(draft.identifier);
       const verified = await authApi.verifyOtp({ ...payload, otp });
+      const { registration_token: registrationToken } = unwrapData(verified.data);
       const completed = await authApi.completeRegistration({
         ...payload,
-        otp_token: verified.data.registration_token,
+        otp_token: registrationToken,
         name: draft.name,
         password: draft.password,
       });
-      return completed.data;
+      return unwrapData(completed.data);
     },
     onSuccess: (data) => {
       const { access_token, refresh_token, user } = data;
