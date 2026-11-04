@@ -7,6 +7,7 @@ import AppFrame from '@/components/shared/AppFrame';
 
 import Login from '@/pages/auth/Login';
 import Signup from '@/pages/auth/Signup';
+import ForgotPin from '@/pages/auth/ForgotPin';
 import Privacy from '@/pages/shared/Privacy';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
 import SelectRole from '@/pages/auth/SelectRole';
@@ -48,6 +49,7 @@ const devRoutes = import.meta.env.DEV
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/auth/sign-in" replace /> },
   { path: '/register', element: <Navigate to="/auth/sign-up" replace /> },
+  { path: '/auth/forgot-pin', element: <ForgotPin /> },
   { path: '/auth/register', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/register/complete', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/login', element: <Navigate to="/auth/sign-in" replace /> },

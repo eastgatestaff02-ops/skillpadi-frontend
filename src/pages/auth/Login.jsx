@@ -1,24 +1,27 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
 import { parseIdentifier } from '@/lib/utils/identifier';
+import { PIN_MAX_LENGTH } from '@/lib/utils/pin';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { unwrapData } from '@/lib/utils/api';
 import { normalizeUser } from '@/lib/utils/user';
 import { homePathFor } from '@/lib/utils/routes';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import TextField from '@/components/ui/TextField';
-import PasswordField from '@/components/ui/PasswordField';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
+
+const inputClass =
+  'block h-12 w-full rounded-xl bg-cream px-4 text-body1 text-navy-500 outline-none focus:ring-2 focus:ring-ochre-500';
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [formError, setFormError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
@@ -29,7 +32,7 @@ export default function Login() {
         pin,
       });
       const session = unwrapData(loggedIn.data);
-      setAuth(session.accessToken, session.refreshToken, normalizeUser(session.user));
+      setAuth(session.accessToken, session.refreshToken, normalizeUser(session.user), remember);
 
       try {
         const me = await authApi.getMe();
@@ -45,74 +48,111 @@ export default function Login() {
     },
   });
 
-  const canSubmit = identifier.trim() !== '' && pin !== '';
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!canSubmit || loginMutation.isPending) return;
+    if (loginMutation.isPending) return;
+    if (identifier.trim() === '' || pin === '') {
+      setFormError('Enter your phone number or email and your PIN.');
+      return;
+    }
+    setFormError('');
     loginMutation.mutate();
   };
 
+  const errorMessage =
+    formError ||
+    (loginMutation.isError ? getApiErrorMessage(loginMutation.error, 'Invalid credentials') : '');
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <p className="text-h3 font-bold text-navy-500">SkillPadi</p>
-          <p className="mt-1 text-body2 text-navy-500/70">From Apprentice to Master.</p>
-        </div>
+    <div className="min-h-screen bg-cream px-4 pb-10 pt-16">
+      <div className="mx-auto w-full max-w-md">
+        <h1 className="text-center text-h2 font-bold text-navy-500">Welcome back</h1>
+        <p className="mt-3 text-center text-body2 text-navy-500/60">
+          Enter your phone number or email to continue.
+        </p>
 
-        <Card className="p-6">
-          <h1 className="text-h2 font-bold text-navy-500">Welcome back</h1>
-          <p className="mt-1 text-body2 text-navy-500/70">
-            Sign in with your phone number or email and your PIN.
-          </p>
+        {location.state?.pinReset && (
+          <FeedbackBanner tone="success" className="mt-6">
+            Your PIN has been updated. Sign in with your new PIN.
+          </FeedbackBanner>
+        )}
 
-          <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
-            <TextField
-              label="Phone number or email"
-              icon={User}
+        <form onSubmit={handleSubmit} noValidate className="mt-8 rounded-3xl bg-white p-5">
+          <div>
+            <label htmlFor="login-identifier" className="mb-2 block text-body2 text-navy-500">
+              Email address/phone number
+            </label>
+            <input
+              id="login-identifier"
               type="text"
               autoComplete="username"
-              placeholder="+234 803 456 7890 or you@example.com"
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              onChange={(e) => {
+                setIdentifier(e.target.value);
+                setFormError('');
+              }}
+              className={inputClass}
             />
+          </div>
 
-            <PasswordField
-              label="PIN"
-              icon={Lock}
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <label htmlFor="login-pin" className="text-body2 text-navy-500">
+                PIN
+              </label>
+              <Link to="/auth/forgot-pin" className="text-body2 text-ochre-500 hover:underline">
+                Forgot PIN?
+              </Link>
+            </div>
+            <input
+              id="login-pin"
+              type="password"
               inputMode="numeric"
               autoComplete="current-password"
-              placeholder="Enter your PIN"
+              maxLength={PIN_MAX_LENGTH}
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => {
+                setPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH));
+                setFormError('');
+              }}
+              className={inputClass}
             />
+          </div>
 
-            {loginMutation.isError && (
-              <FeedbackBanner tone="error">
-                {getApiErrorMessage(loginMutation.error, 'Invalid credentials')}
-              </FeedbackBanner>
-            )}
+          {errorMessage && (
+            <p role="alert" className="mt-3 text-body2 text-danger-500">
+              {errorMessage}
+            </p>
+          )}
 
-            <Button
-              type="submit"
-              size="lg"
-              fullWidth
-              loading={loginMutation.isPending}
-              disabled={!canSubmit}
-              rightIcon={ArrowRight}
-            >
-              Sign in
-            </Button>
-          </form>
-        </Card>
+          <label className="mt-6 flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="peer sr-only"
+            />
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-navy-500 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-navy-500">
+              {remember && <Check size={16} strokeWidth={3} className="text-navy-500" />}
+            </span>
+            <span className="text-lg text-navy-500">Remember me</span>
+          </label>
 
-        <p className="mt-6 text-center text-body2 text-navy-500/70">
-          New to SkillPadi?{' '}
-          <Link to="/auth/sign-up" className="font-bold text-ochre-900 hover:underline">
-            Sign up
-          </Link>
-        </p>
+          <button
+            type="submit"
+            disabled={loginMutation.isPending}
+            className="mt-6 h-12 w-full rounded-xl bg-ochre-500 text-lg text-navy-500 transition-colors hover:bg-ochre-600 active:bg-ochre-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+          </button>
+
+          <p className="mt-5 text-center text-body2 text-ochre-500">
+            New here?{' '}
+            <Link to="/auth/sign-up" className="font-bold hover:underline">
+              Sign Up
+            </Link>
+          </p>
+        </form>
       </div>
     </div>
   );

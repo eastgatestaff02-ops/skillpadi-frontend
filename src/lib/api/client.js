@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '@/lib/store/authStore';
 import { unwrapData } from '@/lib/utils/api';
+import { tokenStorage } from '@/lib/utils/tokenStorage';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://skillpadi-backend-staging.onrender.com';
 
@@ -10,7 +11,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = tokenStorage.get('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -55,14 +56,14 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = tokenStorage.get('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
 
         const res = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
         const data = unwrapData(res.data);
 
-        localStorage.setItem('access_token', data.accessToken);
-        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
+        tokenStorage.set('access_token', data.accessToken);
+        if (data.refreshToken) tokenStorage.set('refresh_token', data.refreshToken);
         useAuthStore.setState({
           accessToken: data.accessToken,
           refreshToken: data.refreshToken || refreshToken,
