@@ -122,6 +122,22 @@ export default function WorkerDashboard() {
 
   return (
     <div className="text-left">
+      <div className="mb-6 relative w-full h-48 md:h-64 rounded-xl overflow-hidden shadow-sm">
+        <img
+          src="/worker_tools.jpg"
+          alt="Worker Tools"
+          className="absolute inset-0 w-full h-full object-cover object-top"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-900/80 to-transparent flex items-center p-6 md:p-8">
+          <div className="max-w-md text-white">
+            <h2 className="text-2xl font-bold mb-2">Ready to work?</h2>
+            <p className="text-sm opacity-90">
+              Complete your profile and find new jobs in Lagos today.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <h1 className="text-h2 font-bold text-navy-500">Home</h1>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
