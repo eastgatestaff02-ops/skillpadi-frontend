@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
@@ -21,6 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
+  // Real API Call (No demo bypass)
   const loginMutation = useMutation({
     mutationFn: async () => {
       const parsed = parseIdentifier(identifier);
@@ -56,21 +57,8 @@ export default function Login() {
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-cream">
       
-            <div className="flex md:w-1/2 relative bg-ochre-100 min-h-[30vh] md:min-h-0 md:order-2">
-        <img 
-          src="/onboarding_worker.jpg" 
-          alt="Skilled Worker" 
-          className="absolute inset-0 h-full w-full object-cover"
-       
-        <div className="absolute inset-0 bg-navy-900/20 mix-blend-multiply"></div>
-        
-        <div className="absolute inset-0 flex flex-col justify-center p-8 text-white z-10 md:p-12 bg-gradient-to-t from-black/60 to-transparent md:bg-none">
-          <h2 className="text-3xl font-bold md:hidden">SkillPadi</h2>
-          <p className="text-sm opacity-90 md:hidden">From Apprentice to Master.</p>
-        </div>
-      </div>
-
-      <div className="flex w-full flex-col justify-center px-4 py-10 md:w-1/2 lg:px-20 md:order-1 bg-cream relative z-20 -mt-6 md:mt-0 rounded-t-3xl md:rounded-none">
+      {/* LEFT SIDE: The Form */}
+      <div className="flex w-full flex-col justify-center px-4 py-10 md:w-1/2 lg:px-20 bg-cream relative z-20 -mt-6 md:mt-0 rounded-t-3xl md:rounded-none">
         <div className="mx-auto w-full max-w-sm">
           
           <div className="mb-8 text-center md:text-left">
@@ -130,6 +118,21 @@ export default function Login() {
               Sign up
             </Link>
           </p>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE: The Image */}
+      <div className="flex md:w-1/2 relative bg-ochre-100 min-h-[30vh] md:min-h-0 md:order-2">
+        <img 
+          src="/onboarding_worker.jpg" 
+          alt="Skilled Worker" 
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-navy-900/20 mix-blend-multiply"></div>
+        
+        <div className="absolute inset-0 flex flex-col justify-center p-8 text-white z-10 md:p-12 bg-gradient-to-t from-black/60 to-transparent md:bg-none">
+          <h2 className="text-3xl font-bold md:hidden">SkillPadi</h2>
+          <p className="text-sm opacity-90 md:hidden">From Apprentice to Master.</p>
         </div>
       </div>
 

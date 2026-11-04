@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/lib/store/authStore';
+import Logo from '@/components/ui/Logo';
 import { authApi } from '@/lib/api/auth';
 import {
   Home,
@@ -52,9 +53,9 @@ export default function AppLayout() {
     <div className="flex min-h-screen flex-col bg-cream">
       <header className="sticky top-0 z-20 border-b border-navy-50 bg-cream">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <Link to={homePath} className="text-h3 font-bold text-navy-500">
-            SkillPadi
-          </Link>
+            <Link to={homePath} aria-label="SkillPadi home">
+              <Logo size="sm" />
+            </Link>
           <div className="flex items-center gap-3">
             {displayName && (
               <span className="hidden text-body2 text-navy-500/70 sm:inline">{displayName}</span>

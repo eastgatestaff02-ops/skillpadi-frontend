@@ -1,11 +1,12 @@
 import Card from '@/components/ui/Card';
+import Logo from '@/components/ui/Logo';
 
 export default function AuthLayout({ title, subtitle, footer, bare = false, wide = false, children }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
       <div className={`w-full ${wide ? 'max-w-xl' : 'max-w-sm'}`}>
-        <div className="mb-8 text-center">
-          <p className="text-h3 font-bold text-navy-500">SkillPadi</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Logo size="lg" />
           <p className="mt-1 text-body2 text-navy-500/70">From Apprentice to Master.</p>
         </div>
 
