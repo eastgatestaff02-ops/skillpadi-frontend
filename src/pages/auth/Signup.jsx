@@ -101,6 +101,7 @@ export default function Signup() {
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-cream">
       
+      {/* RIGHT SIDE: The Image (Shows on mobile as a top banner) */}
       <div className="flex w-full min-h-[30vh] relative bg-ochre-100 md:w-1/2 md:min-h-0 md:order-2">
         <img 
           src="/signup_mobile.jpg" 
@@ -109,12 +110,14 @@ export default function Signup() {
         />
         <div className="absolute inset-0 bg-navy-900/20 mix-blend-multiply"></div>
         
+        {/* Mobile-only branding overlay */}
         <div className="absolute inset-0 flex flex-col justify-center p-8 text-white z-10 md:hidden bg-gradient-to-t from-black/60 to-transparent">
           <h2 className="text-3xl font-bold">SkillPadi</h2>
           <p className="text-sm opacity-90">From Apprentice to Master.</p>
         </div>
       </div>
 
+      {/* LEFT SIDE: The Form (Moves to bottom on mobile) */}
       <div className="flex w-full flex-col justify-center px-4 py-10 md:w-1/2 lg:px-20 md:order-1 -mt-6 md:mt-0 bg-cream relative z-20 rounded-t-3xl md:rounded-none">
         <div className="mx-auto w-full max-w-sm">
           <AuthLayout
