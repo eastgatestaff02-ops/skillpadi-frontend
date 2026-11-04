@@ -1,6 +1,12 @@
 import { apiClient } from './client';
+import { tokenStorage } from '@/lib/utils/tokenStorage';
 
 export const PRIVACY_NOTICE_VERSION = '2026-10-29-v1';
+
+// TODO: confirm these two paths and the request fields in Swagger (/api/docs).
+// If the backend names them differently, change only these two lines.
+const PIN_RESET_REQUEST_PATH = '/api/auth/pin/reset/otp/request';
+const PIN_RESET_CONFIRM_PATH = '/api/auth/pin/reset/confirm';
 
 const toLocalPhone = (value) => {
   const text = String(value || '');
@@ -25,10 +31,14 @@ export const authApi = {
     }),
   login: ({ identifier, pin }) =>
     apiClient.post('/api/auth/login', { identifier: toLocalPhone(identifier), pin }),
+  requestPinReset: ({ phone }) =>
+    apiClient.post(PIN_RESET_REQUEST_PATH, { phone: toLocalPhone(phone) }),
+  resetPin: ({ phone, code, pin }) =>
+    apiClient.post(PIN_RESET_CONFIRM_PATH, { phone: toLocalPhone(phone), code, pin }),
   logout: () =>
     apiClient.post(
       '/api/auth/logout',
-      { refreshToken: localStorage.getItem('refresh_token') },
+      { refreshToken: tokenStorage.get('refresh_token') },
       { timeout: 3000 }
     ),
   getMe: () => apiClient.get('/api/me'),
