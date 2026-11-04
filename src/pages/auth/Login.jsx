@@ -84,12 +84,12 @@ export default function Login() {
           <Card className="p-6">
             <h1 className="text-h2 font-bold text-navy-500">Welcome back</h1>
             <p className="mt-1 text-body2 text-navy-500/70">
-              Sign in with your phone number or email and your PIN.
+              Sign in with phone number/email and PIN.
             </p>
 
             <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
               <TextField
-                label="Phone number or email"
+                label="Phone number/email"
                 icon={User}
                 type="text"
                 autoComplete="username"
