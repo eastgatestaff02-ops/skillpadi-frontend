@@ -1,25 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { Phone, Lock } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
-import { parseIdentifier, formatIdentifier } from '@/lib/utils/identifier';
-import { getPinError, PIN_MIN_LENGTH, PIN_MAX_LENGTH } from '@/lib/utils/pin';
+import { parseIdentifier } from '@/lib/utils/identifier';
+import { getPinError, PIN_MAX_LENGTH } from '@/lib/utils/pin';
 import { getApiErrorMessage } from '@/lib/utils/errors';
-import AuthLayout from '@/components/layout/AuthLayout';
-import Button from '@/components/ui/Button';
-import TextField from '@/components/ui/TextField';
-import PasswordField from '@/components/ui/PasswordField';
+import AuthScreen, { AuthCard, AuthField, AuthButton } from '@/components/layout/AuthScreen';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 const RESEND_SECONDS = 30;
 const NOT_AVAILABLE = 'PIN reset is not available yet. Please contact support.';
 
-const formatCountdown = (seconds) => {
-  const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const rest = String(seconds % 60).padStart(2, '0');
-  return `${minutes}:${rest}`;
-};
+const toLocalPhone = (phone) => (phone?.startsWith('+234') ? `0${phone.slice(4)}` : phone || '');
 
 const requestMessage = (err) => {
   const status = err.response?.status;
@@ -59,6 +52,7 @@ export default function ForgotPin() {
       setSentTo(target);
       setSecondsLeft(RESEND_SECONDS);
       setOtp('');
+      setSubmitted(false);
     },
   });
 
@@ -78,142 +72,148 @@ export default function ForgotPin() {
 
   const pinError = getPinError(pin);
   const mismatch = pin !== confirmPin;
-  const canReset = otp.length === 6 && !pinError && !mismatch;
+  const otpOk = otp.length === 6;
 
   const handleReset = (e) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!canReset || resetMutation.isPending) return;
+    if (!otpOk || pinError || mismatch || resetMutation.isPending) return;
     resetMutation.mutate();
   };
 
-  const footer = (
-    <Link to="/auth/sign-in" className="font-bold text-ochre-900 hover:underline">
-      Back to sign in
-    </Link>
-  );
-
   if (!sentTo) {
     return (
-      <AuthLayout
+      <AuthScreen
+        centered
         title="Forgot your PIN?"
         subtitle="Enter your phone number. We will send a code so you can set a new PIN."
-        footer={footer}
       >
-        <form onSubmit={handleSendCode} noValidate className="space-y-4">
-          <TextField
-            label="Phone number"
-            icon={User}
-            type="tel"
-            autoComplete="tel"
-            placeholder="+234 801 234 5678"
-            error={
-              submitted && !phone ? 'Enter a phone number: +234 followed by 10 digits.' : ''
-            }
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          />
+        <AuthCard>
+          <form onSubmit={handleSendCode} noValidate className="space-y-5">
+            <AuthField
+              label="Phone number"
+              icon={Phone}
+              type="tel"
+              autoComplete="tel"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              error={submitted && !phone ? 'Enter a valid Nigerian phone number.' : ''}
+            />
 
-          {requestMutation.isError && (
-            <FeedbackBanner tone="error">{requestMessage(requestMutation.error)}</FeedbackBanner>
-          )}
+            {requestMutation.isError && (
+              <FeedbackBanner tone="error">{requestMessage(requestMutation.error)}</FeedbackBanner>
+            )}
 
-          <Button
-            type="submit"
-            size="lg"
-            fullWidth
-            loading={requestMutation.isPending}
-            rightIcon={ArrowRight}
-          >
-            Send code
-          </Button>
-        </form>
-      </AuthLayout>
+            <AuthButton type="submit">
+              {requestMutation.isPending ? 'Please wait...' : 'Send code'}
+            </AuthButton>
+          </form>
+
+          <p className="mt-5 text-center text-body2 text-ochre-500">
+            Remembered your PIN?{' '}
+            <Link to="/auth/sign-in" className="font-bold">
+              Sign In
+            </Link>
+          </p>
+        </AuthCard>
+      </AuthScreen>
     );
   }
 
   return (
-    <AuthLayout
-      title="Set a new PIN"
-      subtitle={`Enter the 6-digit code sent to ${formatIdentifier(sentTo)}.`}
-      footer={footer}
-    >
-      <form onSubmit={handleReset} noValidate className="space-y-4">
-        <TextField
-          label="One-time passcode"
-          icon={Lock}
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          placeholder="000000"
-          inputClassName="tracking-[0.4em]"
-          value={otp}
-          onChange={(e) => {
-            setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-            resetMutation.reset();
-          }}
-        />
+    <AuthScreen title="Set a new PIN" withLogo>
+      <AuthCard>
+        <form onSubmit={handleReset} noValidate className="space-y-5">
+          <p className="text-body1 font-semibold text-navy-500">
+            We sent a 6-digit code to {toLocalPhone(sentTo.value)}
+          </p>
 
-        <PasswordField
-          label="New PIN"
-          icon={Lock}
-          inputMode="numeric"
-          autoComplete="new-password"
-          maxLength={PIN_MAX_LENGTH}
-          placeholder="Create a new PIN"
-          helper={`${PIN_MIN_LENGTH} to ${PIN_MAX_LENGTH} digits.`}
-          error={submitted ? pinError : ''}
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH))}
-        />
+          <AuthField
+            icon={Lock}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            placeholder="––––––"
+            inputClassName="tracking-[0.5em]"
+            aria-label="One-time passcode"
+            value={otp}
+            error={submitted && !otpOk ? 'Enter the 6-digit code.' : ''}
+            onChange={(e) => {
+              setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+              resetMutation.reset();
+            }}
+          />
 
-        <PasswordField
-          label="Confirm new PIN"
-          icon={Lock}
-          inputMode="numeric"
-          autoComplete="new-password"
-          maxLength={PIN_MAX_LENGTH}
-          placeholder="Enter the PIN again"
-          error={submitted && mismatch ? 'The PINs do not match.' : ''}
-          value={confirmPin}
-          onChange={(e) =>
-            setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH))
-          }
-        />
+          <AuthField
+            outlined
+            label="New PIN"
+            type="password"
+            inputMode="numeric"
+            autoComplete="new-password"
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="Enter 4-digit PIN"
+            inputClassName="tracking-wider"
+            value={pin}
+            error={submitted ? pinError : ''}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH))}
+          />
 
-        {resetMutation.isError && (
-          <FeedbackBanner tone="error">{confirmMessage(resetMutation.error)}</FeedbackBanner>
+          <AuthField
+            outlined
+            label="Confirm new PIN"
+            type="password"
+            inputMode="numeric"
+            autoComplete="new-password"
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="Re-enter your PIN"
+            inputClassName="tracking-wider"
+            value={confirmPin}
+            error={submitted && mismatch ? 'The PINs do not match.' : ''}
+            onChange={(e) =>
+              setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH))
+            }
+          />
+
+          {resetMutation.isError && (
+            <FeedbackBanner tone="error">{confirmMessage(resetMutation.error)}</FeedbackBanner>
+          )}
+
+          <AuthButton type="submit">
+            {resetMutation.isPending ? 'Please wait...' : 'Reset PIN'}
+          </AuthButton>
+        </form>
+      </AuthCard>
+
+      <AuthCard className="mt-4 text-center">
+        <p className="text-body2 text-navy-500">Didn't receive the code? Check your SMS.</p>
+        {secondsLeft > 0 ? (
+          <p className="mt-5 text-body1 font-medium text-ochre-500">
+            Enter the code sent to your phone.
+          </p>
+        ) : (
+          <button
+            type="button"
+            disabled={requestMutation.isPending}
+            onClick={() => requestMutation.mutate(sentTo)}
+            className="mt-5 text-body1 font-bold text-ochre-500 disabled:opacity-60"
+          >
+            {requestMutation.isPending ? 'Sending...' : 'Resend code'}
+          </button>
         )}
-
-        <Button
-          type="submit"
-          size="lg"
-          fullWidth
-          loading={resetMutation.isPending}
-          rightIcon={ArrowRight}
-        >
-          Reset PIN
-        </Button>
-      </form>
-
-      <div className="mt-6 space-y-3">
-        <Button
-          variant="outlined"
-          fullWidth
-          loading={requestMutation.isPending}
-          disabled={secondsLeft > 0}
-          onClick={() => requestMutation.mutate(sentTo)}
-        >
-          {secondsLeft > 0 ? `Resend in ${formatCountdown(secondsLeft)}` : 'Resend code'}
-        </Button>
         {requestMutation.isError && (
-          <FeedbackBanner tone="error">{requestMessage(requestMutation.error)}</FeedbackBanner>
+          <FeedbackBanner tone="error" className="mt-3 text-left">
+            {requestMessage(requestMutation.error)}
+          </FeedbackBanner>
         )}
-        <Button variant="text" fullWidth onClick={() => setSentTo(null)}>
+        <button
+          type="button"
+          onClick={() => setSentTo(null)}
+          className="mt-4 block w-full text-body2 font-bold text-navy-500/70"
+        >
           Change phone number
-        </Button>
-      </div>
-    </AuthLayout>
+        </button>
+      </AuthCard>
+    </AuthScreen>
   );
 }

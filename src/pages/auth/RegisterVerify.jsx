@@ -1,27 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Lock, ArrowRight } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
-import { useAuthStore } from '@/lib/store/authStore';
 import { unwrapData } from '@/lib/utils/api';
-import { normalizeUser } from '@/lib/utils/user';
-import { identifierPayload, formatIdentifier } from '@/lib/utils/identifier';
+import { identifierPayload } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
-import { getRegistrationDraft, clearRegistrationDraft } from '@/lib/store/registrationDraft';
-import AuthLayout from '@/components/layout/AuthLayout';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import TextField from '@/components/ui/TextField';
+import { getRegistrationDraft, setRegistrationDraft } from '@/lib/store/registrationDraft';
+import AuthScreen, { AuthCard, AuthField, AuthButton } from '@/components/layout/AuthScreen';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 const RESEND_SECONDS = 30;
 
-const formatCountdown = (seconds) => {
-  const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const rest = String(seconds % 60).padStart(2, '0');
-  return `${minutes}:${rest}`;
-};
+const toLocalPhone = (phone) => (phone?.startsWith('+234') ? `0${phone.slice(4)}` : phone || '');
 
 const getOtpMessage = (err) => {
   if (err.response?.status === 400) return 'Code incorrect or expired. Try again.';
@@ -29,12 +20,11 @@ const getOtpMessage = (err) => {
 };
 
 export default function RegisterVerify() {
+  const [draft] = useState(getRegistrationDraft);
   const [otp, setOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const navigate = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuth);
-  const draft = getRegistrationDraft();
 
   useEffect(() => {
     if (secondsLeft <= 0) return undefined;
@@ -47,16 +37,11 @@ export default function RegisterVerify() {
       const { phone } = identifierPayload(draft.identifier);
       const verified = await authApi.verifyOtp({ phone, code: otp });
       const { registrationToken } = unwrapData(verified.data);
-      const completed = await authApi.completeRegistration({
-        registrationToken,
-        pin: draft.pin,
-      });
-      return unwrapData(completed.data);
+      return registrationToken;
     },
-    onSuccess: (data) => {
-      setAuth(data.accessToken, data.refreshToken, normalizeUser(data.user));
-      clearRegistrationDraft();
-      navigate('/auth/select-role');
+    onSuccess: (registrationToken) => {
+      setRegistrationDraft({ ...draft, registrationToken });
+      navigate('/auth/create-pin');
     },
     onError: (err) => setErrorMsg(getOtpMessage(err)),
   });
@@ -83,68 +68,63 @@ export default function RegisterVerify() {
   };
 
   return (
-    <AuthLayout
-      title="Verify your account"
-      subtitle="Enter the 6-digit code we sent you."
-      footer={
-        <Link to="/auth/sign-up" className="font-bold text-ochre-900 hover:underline">
-          Change my details
-        </Link>
-      }
-    >
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <TextField
-          label="One-time passcode"
-          icon={Lock}
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          placeholder="000000"
-          inputClassName="tracking-[0.4em]"
-          helper={`Sent to ${formatIdentifier(draft.identifier)}`}
-          error={errorMsg}
-          value={otp}
-          onChange={(e) => {
-            setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-            setErrorMsg('');
-          }}
-        />
+    <AuthScreen title="OTP Verification" withLogo>
+      <AuthCard>
+        <form onSubmit={handleSubmit} noValidate>
+          <p className="text-body1 font-semibold text-navy-500">
+            We sent a 6-digit code to {toLocalPhone(draft.identifier.value)}
+          </p>
 
-        <Button
-          type="submit"
-          size="lg"
-          fullWidth
-          loading={verifyMutation.isPending}
-          disabled={!canSubmit}
-          rightIcon={ArrowRight}
-        >
-          Verify and create account
-        </Button>
-      </form>
+          <AuthField
+            className="mt-4"
+            icon={Lock}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            placeholder="––––––"
+            inputClassName="tracking-[0.5em]"
+            aria-label="One-time passcode"
+            value={otp}
+            error={errorMsg}
+            onChange={(e) => {
+              setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+              setErrorMsg('');
+            }}
+          />
 
-      <Card className="mt-6 border-navy-100 p-3">
-        <p className="mb-2 text-body2 text-navy-500">Didn't receive the code?</p>
-        <Button
-          variant="outlined"
-          fullWidth
-          loading={resendMutation.isPending}
-          disabled={secondsLeft > 0}
-          onClick={() => resendMutation.mutate()}
-        >
-          {secondsLeft > 0 ? `Resend in ${formatCountdown(secondsLeft)}` : 'Resend code'}
-        </Button>
+          <AuthButton type="submit" disabled={!canSubmit} className="mt-4">
+            {verifyMutation.isPending ? 'Verifying...' : 'Verify phone number'}
+          </AuthButton>
+        </form>
+      </AuthCard>
+
+      <AuthCard className="mt-4 text-center">
+        <p className="text-body2 text-navy-500">Didn't receive the code? Check your SMS.</p>
+        {secondsLeft > 0 ? (
+          <p className="mt-5 text-body1 font-medium text-ochre-500">
+            Enter the code sent to your phone.
+          </p>
+        ) : (
+          <button
+            type="button"
+            disabled={resendMutation.isPending}
+            onClick={() => resendMutation.mutate()}
+            className="mt-5 text-body1 font-bold text-ochre-500 disabled:opacity-60"
+          >
+            {resendMutation.isPending ? 'Sending...' : 'Resend code'}
+          </button>
+        )}
         {resendMutation.isError && (
-          <FeedbackBanner tone="error" className="mt-3">
+          <FeedbackBanner tone="error" className="mt-3 text-left">
             {getApiErrorMessage(resendMutation.error)}
           </FeedbackBanner>
         )}
-        {resendMutation.isSuccess && secondsLeft > 0 && (
-          <FeedbackBanner tone="success" className="mt-3">
-            A new code has been sent.
-          </FeedbackBanner>
-        )}
-      </Card>
-    </AuthLayout>
+      </AuthCard>
+
+      <p className="mt-6 text-body2 text-navy-500/70">
+        Keep this code private. SkillPadi support will never ask you to share it.
+      </p>
+    </AuthScreen>
   );
 }
