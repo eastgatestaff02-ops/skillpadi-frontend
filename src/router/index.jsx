@@ -10,6 +10,7 @@ import Signup from '@/pages/auth/Signup';
 import ForgotPin from '@/pages/auth/ForgotPin';
 import Privacy from '@/pages/shared/Privacy';
 import RegisterVerify from '@/pages/auth/RegisterVerify';
+import CreatePin from '@/pages/auth/CreatePin';
 import SelectRole from '@/pages/auth/SelectRole';
 import PublicProfile from '@/pages/shared/PublicProfile';
 import NotFound from '@/pages/shared/NotFound';
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
   { path: '/register', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/forgot-pin', element: <ForgotPin /> },
   { path: '/auth/register', element: <Navigate to="/auth/sign-up" replace /> },
+  { path: '/auth/create-pin', element: <CreatePin /> },
   { path: '/auth/register/complete', element: <Navigate to="/auth/sign-up" replace /> },
   { path: '/auth/login', element: <Navigate to="/auth/sign-in" replace /> },
   { path: '/auth/signup', element: <Navigate to="/auth/sign-up" replace /> },

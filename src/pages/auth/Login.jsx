@@ -19,9 +19,10 @@ export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const pinReset = Boolean(location.state?.pinReset);
 
-  // Real API Call (No demo bypass)
   const loginMutation = useMutation({
     mutationFn: async () => {
       const parsed = parseIdentifier(identifier);
@@ -56,11 +57,8 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-cream">
-      
-      {/* LEFT SIDE: The Form */}
       <div className="flex w-full flex-col justify-center px-4 py-10 md:w-1/2 lg:px-20 bg-cream relative z-20 -mt-6 md:mt-0 rounded-t-3xl md:rounded-none">
         <div className="mx-auto w-full max-w-sm">
-          
           <div className="mb-8 text-center md:text-left">
             <p className="text-h3 font-bold text-navy-500 hidden md:block">SkillPadi</p>
             <p className="mt-1 text-body2 text-navy-500/70 hidden md:block">From Apprentice to Master.</p>
@@ -71,6 +69,12 @@ export default function Login() {
             <p className="mt-1 text-body2 text-navy-500/70">
               Sign in with your phone number or email and your PIN.
             </p>
+
+            {pinReset && (
+              <FeedbackBanner tone="success" className="mt-4">
+                Your PIN has been reset. Sign in with your new PIN.
+              </FeedbackBanner>
+            )}
 
             <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
               <TextField
@@ -85,6 +89,11 @@ export default function Login() {
 
               <PasswordField
                 label="PIN"
+                labelRight={
+                  <Link to="/auth/forgot-pin" className="font-bold text-ochre-900 hover:underline">
+                    Forgot PIN?
+                  </Link>
+                }
                 icon={Lock}
                 inputMode="numeric"
                 autoComplete="current-password"
@@ -121,21 +130,19 @@ export default function Login() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: The Image */}
       <div className="flex md:w-1/2 relative bg-ochre-100 min-h-[30vh] md:min-h-0 md:order-2">
-        <img 
-          src="/onboarding_worker.jpg" 
-          alt="Skilled Worker" 
+        <img
+          src="/onboarding_worker.jpg"
+          alt="Skilled Worker"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-navy-900/20 mix-blend-multiply"></div>
-        
+
         <div className="absolute inset-0 flex flex-col justify-center p-8 text-white z-10 md:p-12 bg-gradient-to-t from-black/60 to-transparent md:bg-none">
           <h2 className="text-3xl font-bold md:hidden">SkillPadi</h2>
           <p className="text-sm opacity-90 md:hidden">From Apprentice to Master.</p>
         </div>
       </div>
-
     </div>
   );
 }
