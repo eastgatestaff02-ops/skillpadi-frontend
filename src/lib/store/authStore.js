@@ -21,6 +21,10 @@ export const useAuthStore = create(
         localStorage.setItem('refresh_token', refresh);
         set({ accessToken: access, refreshToken: refresh, user });
       },
+      setAccessToken: (access) => {
+        localStorage.setItem('access_token', access);
+        set({ accessToken: access });
+      },
       setUser: (user) => set({ user }),
       setMode: (mode) => set({ mode }),
       logout: () => {

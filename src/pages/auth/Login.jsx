@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { parseIdentifier } from '@/lib/utils/identifier';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import { unwrapData } from '@/lib/utils/api';
+import { normalizeUser } from '@/lib/utils/user';
 import { homePathFor } from '@/lib/utils/routes';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -16,27 +17,35 @@ import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const parsed = parseIdentifier(identifier);
-      return authApi.login({
+      const loggedIn = await authApi.login({
         identifier: parsed ? parsed.value : identifier.trim(),
-        password,
+        pin,
       });
-    },
-    onSuccess: (res) => {
-      const { access_token, refresh_token, user } = unwrapData(res.data);
+      const session = unwrapData(loggedIn.data);
+      setAuth(session.accessToken, session.refreshToken, normalizeUser(session.user));
 
-      setAuth(access_token, refresh_token, user);
+      try {
+        const me = await authApi.getMe();
+        return normalizeUser(unwrapData(me.data));
+      } catch (err) {
+        useAuthStore.getState().logout();
+        throw err;
+      }
+    },
+    onSuccess: (user) => {
+      useAuthStore.getState().setUser(user);
       navigate(homePathFor(user, useAuthStore.getState().mode));
     },
   });
 
-  const canSubmit = identifier.trim() !== '' && password !== '';
+  const canSubmit = identifier.trim() !== '' && pin !== '';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,7 +64,7 @@ export default function Login() {
         <Card className="p-6">
           <h1 className="text-h2 font-bold text-navy-500">Welcome back</h1>
           <p className="mt-1 text-body2 text-navy-500/70">
-            Sign in with your phone number or email and your password.
+            Sign in with your phone number or email and your PIN.
           </p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
@@ -70,12 +79,13 @@ export default function Login() {
             />
 
             <PasswordField
-              label="Password"
+              label="PIN"
               icon={Lock}
+              inputMode="numeric"
               autoComplete="current-password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
             />
 
             {loginMutation.isError && (
