@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Phone, Lock } from 'lucide-react';
+import { Phone, Lock, User } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { parseIdentifier } from '@/lib/utils/identifier';
 import { getPinError, PIN_MAX_LENGTH } from '@/lib/utils/pin';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import AuthScreen, { AuthCard, AuthField, AuthButton } from '@/components/layout/AuthScreen';
+import TextField from '@/components/ui/TextField';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
 const RESEND_SECONDS = 30;
@@ -29,6 +30,7 @@ const confirmMessage = (err) => {
 
 export default function ForgotPin() {
   const [value, setValue] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [sentTo, setSentTo] = useState(null);
   const [otp, setOtp] = useState('');
   const [pin, setPin] = useState('');
@@ -86,10 +88,19 @@ export default function ForgotPin() {
       <AuthScreen
         centered
         title="Forgot your PIN?"
-        subtitle="Enter your phone number. We will send a code so you can set a new PIN."
+        subtitle="Enter your phone number or email. We will send a code so you can set a new PIN."
       >
         <AuthCard>
           <form onSubmit={handleSendCode} noValidate className="space-y-5">
+            <TextField
+              label="Phone number or Email"
+              icon={User}
+              type="text"
+              autoComplete="username"
+              placeholder="+234... or you@example.com"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+            />
             <AuthField
               label="Phone number"
               icon={Phone}
