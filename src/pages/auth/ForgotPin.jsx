@@ -29,7 +29,6 @@ const confirmMessage = (err) => {
 };
 
 export default function ForgotPin() {
-  const [value, setValue] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [sentTo, setSentTo] = useState(null);
   const [otp, setOtp] = useState('');
@@ -45,7 +44,8 @@ export default function ForgotPin() {
     return () => clearTimeout(timer);
   }, [secondsLeft]);
 
-  const parsed = parseIdentifier(value);
+  // Parse the single identifier field to check if it's a valid phone number
+  const parsed = parseIdentifier(identifier);
   const phone = parsed?.type === 'phone' ? parsed : null;
 
   const requestMutation = useMutation({
@@ -100,15 +100,11 @@ export default function ForgotPin() {
               placeholder="+234... or you@example.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-            />
-            <AuthField
-              label="Phone number"
-              icon={Phone}
-              type="tel"
-              autoComplete="tel"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              error={submitted && !phone ? 'Enter a valid Nigerian phone number.' : ''}
+              error={
+                submitted && !phone
+                  ? 'Enter a valid Nigerian phone number or email address.'
+                  : ''
+              }
             />
 
             {requestMutation.isError && (
