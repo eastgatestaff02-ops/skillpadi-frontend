@@ -19,14 +19,15 @@ const WorkerDashboard = lazy(() => import('@/pages/worker/Dashboard'));
 const WorkerProfile = lazy(() => import('@/pages/worker/Profile'));
 const JobsSearch = lazy(() => import('@/pages/worker/JobsSearch'));
 
+// Trainer pages are still imported, but will be nested under Worker
+const TrainerDashboard = lazy(() => import('@/pages/trainer/Dashboard'));
+const TrainerProfile = lazy(() => import('@/pages/trainer/TrainerProfile'));
+const CreateListing = lazy(() => import('@/pages/trainer/CreateListing'));
+
 const EmployerDashboard = lazy(() => import('@/pages/employer/Dashboard'));
 const NewJob = lazy(() => import('@/pages/employer/NewJob'));
 const JobDetail = lazy(() => import('@/pages/employer/JobDetail'));
 const SearchWorkers = lazy(() => import('@/pages/employer/SearchWorkers'));
-
-const TrainerDashboard = lazy(() => import('@/pages/trainer/Dashboard'));
-const TrainerProfile = lazy(() => import('@/pages/trainer/TrainerProfile'));
-const CreateListing = lazy(() => import('@/pages/trainer/CreateListing'));
 
 const ApprenticeListings = lazy(() => import('@/pages/apprentice/Listings'));
 const Apply = lazy(() => import('@/pages/apprentice/Apply'));
@@ -68,7 +69,7 @@ export const router = createBrowserRouter([
   { path: '/auth/select-role', element: <SelectRole /> },
 
   { path: '/profile/:id', element: <PublicProfile /> },
-  { path : '/privacy', element: <Privacy /> },
+  { path: '/privacy', element: <Privacy /> },
 
   ...devRoutes,
 
@@ -85,18 +86,15 @@ export const router = createBrowserRouter([
                 path: '/worker',
                 element: <ProtectedRoute role="worker" />,
                 children: [
+                  // Standard Worker Pages
                   { path: 'dashboard', element: <WorkerDashboard /> },
                   { path: 'profile', element: <WorkerProfile /> },
                   { path: 'jobs', element: <JobsSearch /> },
-                ],
-              },
-              {
-                path: '/trainer',
-                element: <ProtectedRoute role="worker" />,
-                children: [
-                  { path: 'dashboard', element: <TrainerDashboard /> },
-                  { path: 'profile', element: <TrainerProfile /> },
-                  { path: 'listings/new', element: <CreateListing /> },
+                  
+                  // Trainer Pages nested under Worker
+                  { path: 'training/dashboard', element: <TrainerDashboard /> },
+                  { path: 'training/profile', element: <TrainerProfile /> },
+                  { path: 'training/listings/new', element: <CreateListing /> },
                 ],
               },
               {

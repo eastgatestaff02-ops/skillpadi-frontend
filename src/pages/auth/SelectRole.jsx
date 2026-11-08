@@ -9,25 +9,26 @@ import { normalizeUser } from '@/lib/utils/user';
 import AuthScreen, { AuthCard, AuthButton } from '@/components/layout/AuthScreen';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
 
+// MERGED ROLES ARRAY
 const roleOptions = [
   {
     id: 'worker',
-    title: 'Worker',
-    description: 'Seeking services/jobs',
+    title: 'Skilled Worker',
+    description: 'Offer your trade services & train apprentices',
     apiRole: 'WORKER',
     next: '/worker/profile',
   },
   {
     id: 'employer',
     title: 'Employer',
-    description: 'In need of services',
+    description: 'Hire skilled workers',
     apiRole: 'EMPLOYER',
     next: '/employer/search',
   },
   {
     id: 'apprentice',
     title: 'Apprentice',
-    description: 'Learn a trade with a trainer',
+    description: 'Learn a trade',
     apiRole: 'APPRENTICE',
     next: '/apprentice/dashboard',
   },
