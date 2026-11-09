@@ -18,6 +18,8 @@ import FeedbackBanner from '@/components/ui/FeedbackBanner';
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
+  const [remember, setRemember] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -29,9 +31,17 @@ export default function Login() {
       const loggedIn = await authApi.login({
         identifier: parsed ? parsed.value : identifier.trim(),
         pin,
+        remember,
       });
+      
       const session = unwrapData(loggedIn.data);
       setAuth(session.accessToken, session.refreshToken, normalizeUser(session.user));
+
+      if (remember) {
+        localStorage.setItem('skillpadi_remember', 'true');
+      } else {
+        localStorage.removeItem('skillpadi_remember');
+      }
 
       try {
         const me = await authApi.getMe();
@@ -102,6 +112,19 @@ export default function Login() {
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               />
 
+              <div className="flex items-center gap-2 pt-1">
+                <input 
+                  type="checkbox" 
+                  id="remember" 
+                  checked={remember} 
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="h-4 w-4 rounded border-navy-200 text-ochre-500 focus:ring-ochre-500 cursor-pointer"
+                />
+                <label htmlFor="remember" className="text-body2 text-navy-500/80 cursor-pointer select-none">
+                  Remember me
+                </label>
+              </div>
+
               {loginMutation.isError && (
                 <FeedbackBanner tone="error">
                   {getApiErrorMessage(loginMutation.error, 'Invalid credentials')}
@@ -115,6 +138,7 @@ export default function Login() {
                 loading={loginMutation.isPending}
                 disabled={!canSubmit}
                 rightIcon={ArrowRight}
+                className="mt-2"
               >
                 Sign in
               </Button>

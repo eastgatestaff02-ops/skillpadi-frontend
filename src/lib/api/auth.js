@@ -27,17 +27,26 @@ export const authApi = {
       privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
       privacyNoticeAcknowledged: true,
     }),
-  login: ({ identifier, pin }) =>
-    apiClient.post('/api/auth/login', { identifier: toLocalPhone(identifier), pin }),
+  
+  login: ({ identifier, pin, remember }) =>
+    apiClient.post('/api/auth/login', { 
+      identifier: toLocalPhone(identifier), 
+      pin,
+      remember 
+    }),
+
   requestPinReset: (data) => apiClient.post(PIN_RESET_REQUEST_PATH, data),
+  
   resetPin: ({ phone, code, pin }) =>
     apiClient.post(PIN_RESET_CONFIRM_PATH, { phone: toLocalPhone(phone), code, pin }),
+    
   logout: () =>
     apiClient.post(
       '/api/auth/logout',
       { refreshToken: tokenStorage.get('refresh_token') },
       { timeout: 3000 }
     ),
+    
   getMe: () => apiClient.get('/api/me'),
   updateRole: (role) => apiClient.post('/api/me/roles', { role }),
 };

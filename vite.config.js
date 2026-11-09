@@ -12,7 +12,7 @@ export default defineConfig({
       '/api': {
         target: 'https://skillpadi-backend-staging.onrender.com',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },
