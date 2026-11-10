@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Phone, Lock, User } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { parseIdentifier } from '@/lib/utils/identifier';
 import { getPinError, PIN_MAX_LENGTH } from '@/lib/utils/pin';
