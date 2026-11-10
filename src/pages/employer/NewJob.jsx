@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, MapPin, CheckCircle2 } from 'lucide-react';
+import { Briefcase, CheckCircle2 } from 'lucide-react';
 
 import { jobsApi } from '@/lib/api/jobs';
 import { catalogApi } from '@/lib/api/catalog';
