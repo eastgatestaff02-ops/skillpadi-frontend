@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { ArrowLeft, MapPin, Briefcase, MessageCircle, Phone, Flag } from 'lucide-react';
 import { workerApi } from '@/lib/api/worker';
 import { reportsApi } from '@/lib/api/reports';
@@ -47,47 +47,41 @@ export default function PublicProfile() {
   });
 
   const reviewsQuery = useWorkerReviews(id);
-  const contact = useWorkerContact();
+
+  // 1. Replaced useWorkerContact with the custom mutation from your snippet
+  const contact = useMutation({
+    mutationFn: () => workerApi.getWhatsAppContact(id),
+    onSuccess: (res) => {
+      const link = res.data.data?.whatsappLink || res.data.whatsappLink;
+      if (link) {
+        window.open(link, '_blank');
+      } else {
+        setContactError('Phone number not available for this worker.');
+      }
+    },
+    onError: (err) => {
+      setContactError(
+        getApiErrorMessage(err, 'Could not get contact details. Please try again.')
+      );
+    },
+  });
 
   const handleContact = (mode) => {
     setContactError('');
-    const popup = mode === 'whatsapp' ? window.open('about:blank', '_blank') : null;
-
-    const finish = (info) => {
-      const target =
-        mode === 'call'
-          ? buildCallLink(info.phone)
-          : info.url || buildWhatsappLink(info.phone, WHATSAPP_MESSAGE);
-
-      if (!target) {
-        popup?.close();
-        setContactError('Contact details are not available for this worker.');
-        return;
+    
+    // If we are calling, we don't use the whatsapp endpoint
+    if (mode === 'call') {
+      if (contactInfo?.phone) {
+        window.location.href = buildCallLink(contactInfo.phone);
+      } else {
+        // Fallback if phone isn't loaded yet (you might need a separate mutation for call)
+        setContactError('Calling is temporarily unavailable.');
       }
-
-      if (mode === 'call') window.location.href = target;
-      else if (popup) popup.location.href = target;
-      else window.location.assign(target);
-    };
-
-    if (contactInfo) {
-      finish(contactInfo);
       return;
     }
 
-    contact.mutate(id, {
-      onSuccess: (body) => {
-        const info = resolveContact(body);
-        setContactInfo(info);
-        finish(info);
-      },
-      onError: (err) => {
-        popup?.close();
-        setContactError(
-          getApiErrorMessage(err, 'Could not get contact details. Please try again.')
-        );
-      },
-    });
+    // For WhatsApp, trigger the mutation
+    contact.mutate();
   };
 
   const handleReport = (payload) => reportsApi.reportProfile({ targetId: id, ...payload });

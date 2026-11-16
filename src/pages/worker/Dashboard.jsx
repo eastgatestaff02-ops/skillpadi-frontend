@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { User, Briefcase, ClipboardList, Star } from 'lucide-react';
-import { jobsApi } from '@/lib/api/jobs';
+// import { jobsApi } from '@/lib/api/jobs'; // Commented out for demo
 import { unwrapList } from '@/lib/utils/api';
 import { queryDefaults } from '@/lib/utils/network';
 import Card from '@/components/ui/Card';
@@ -42,9 +42,20 @@ const FINISHED_JOB = ['filled', 'completed'];
 export default function WorkerDashboard() {
   const [ratingTarget, setRatingTarget] = useState(null);
 
+  // TEMPORARY DEMO DATA
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['myApplications'],
-    queryFn: () => jobsApi.getMyApplications().then((res) => unwrapList(res.data)),
+    queryFn: async () => {
+      // Fake delay so it looks real
+      await new Promise((r) => setTimeout(r, 500));
+      
+      // Return fake applications
+      return [
+        { id: '1', status: 'pending', job: { title: 'Fix wiring in Ikeja', employer: { companyName: 'BuildCo' } } },
+        { id: '2', status: 'accepted', job: { title: 'Plumbing Repair', employer: { companyName: 'Private Home' } } },
+      ];
+    },
+    retry: 1,
     ...queryDefaults,
   });
 

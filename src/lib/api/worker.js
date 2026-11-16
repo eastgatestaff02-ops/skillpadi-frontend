@@ -10,4 +10,5 @@ export const workerApi = {
     apiClient.post('/api/profiles/workers/me/portfolio', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  getWhatsAppContact: (id) => apiClient.get(`/api/profiles/workers/${id}/contact`),
 };

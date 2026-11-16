@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/lib/store/authStore';
 import {
@@ -37,17 +36,35 @@ export default function AppLayout() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 
+          {/* SkillPadi Logo and Brand Name */}
           <Link
             to={dashboardPath}
-            className="text-xl md:text-2xl font-bold text-teal-700"
+            className="flex items-center gap-2"
           >
-            SkillPadi
+            <img
+              src="/logo.png"
+              alt="SkillPadi Logo"
+              className="h-8 w-8 object-contain"
+            />
+
+            <span className="text-xl md:text-2xl font-bold text-[#0F172A]">
+              SkillPadi
+            </span>
           </Link>
 
+          {/* User Information and Logout */}
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-700">
-              {user?.firstName || user?.phone}
-            </span>
+
+            <div className="flex items-center gap-2">
+              {/* Added Avatar Icon here */}
+              <div className="h-8 w-8 rounded-full bg-ochre-100 flex items-center justify-center border border-navy-100">
+                <User size={16} className="text-navy-500" />
+              </div>
+              
+              <span className="text-sm font-medium text-gray-600 hidden md:block">
+                {user?.firstName || user?.name || user?.phone || 'User'}
+              </span>
+            </div>
 
             <button
               onClick={handleLogout}
@@ -56,8 +73,8 @@ export default function AppLayout() {
               <LogOut size={18} />
               Logout
             </button>
-          </div>
 
+          </div>
         </div>
       </header>
 
