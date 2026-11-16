@@ -116,7 +116,7 @@ export const workerHandlers = [
     return HttpResponse.json({ data: { id: `report-${Date.now()}` } }, { status: 201 });
   }),
 
-  http.post('/api/jobs/:id/apply', async ({ params }) => {
+  http.post('/api/jobs/:id/applications', async ({ params }) => {
     await delay(600);
     const job = find(jobs, params.id);
     if (!job) return fail(404, 'NOT_FOUND', 'Job not found');
@@ -134,7 +134,7 @@ export const workerHandlers = [
     return HttpResponse.json({ data: application }, { status: 201 });
   }),
 
-  http.get('/api/workers/applications', async () => {
+  http.get('/api/jobs/applications/mine', async () => {
     await delay(500);
     return HttpResponse.json({ data: workerApplications });
   }),
