@@ -11,7 +11,17 @@ export default function WorkerTraining() {
       <div>
         <h1 className="text-2xl font-bold mb-6 text-gray-800">My Apprentices (Trainer Dashboard)</h1>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-gray-500">Your training listings and apprentice applications will appear here.</p>
+          <p className="text-gray-500 mb-4">Your training listings and apprentice applications will appear here.</p>
+          
+          <div className="border border-gray-100 rounded-lg p-4 flex justify-between items-center bg-gray-50">
+            <div>
+              <p className="font-medium text-gray-800">Junior Electrician Apprenticeship</p>
+              <p className="text-sm text-gray-500">6 months • Lagos</p>
+            </div>
+            <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+              Apply
+            </button>
+          </div>
         </div>
       </div>
 

@@ -33,8 +33,33 @@ const getSteps = (profile) => {
 };
 
 function DetailsSection({ profile }) {
-  const { data: trades = [] } = useTrades();
-  const { data: states = [] } = useStates();
+  // STATIC TRADES for demo
+  const trades = [
+    { id: '1', name: 'Electrician' },
+    { id: '2', name: 'Plumber' },
+    { id: '3', name: 'Welder' },
+    { id: '4', name: 'Mechanic' },
+    { id: '5', name: 'Carpenter' },
+    { id: '6', name: 'Tailor' },
+    { id: '7', name: 'HVAC Technician' },
+    { id: '8', name: 'Painter' },
+    { id: '9', name: 'Mason' },
+  ];
+
+  // STATIC STATES for demo
+  const states = [
+    { id: '1', name: 'Lagos' },
+    { id: '2', name: 'Abuja (FCT)' },
+    { id: '3', name: 'Kano' },
+    { id: '4', name: 'Rivers' },
+    { id: '5', name: 'Oyo' },
+    { id: '6', name: 'Enugu' },
+    { id: '7', name: 'Kaduna' },
+    { id: '8', name: 'Anambra' },
+    { id: '9', name: 'Delta' },
+    { id: '10', name: 'Ogun' },
+  ];
+
   const { data: skills = [] } = useSkills();
   const updateProfile = useUpdateWorkerProfile();
   const [skillIds, setSkillIds] = useState((profile.skills || []).map((skill) => skill.id));
@@ -69,7 +94,6 @@ function DetailsSection({ profile }) {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 space-y-4">
         <SelectField
-          key={`trade-${trades.length}`}
           label="Trade"
           error={errors.tradeId?.message}
           {...register('tradeId', { required: 'Choose your trade.' })}
@@ -96,7 +120,6 @@ function DetailsSection({ profile }) {
         />
 
         <SelectField
-          key={`state-${states.length}`}
           label="State"
           helper="Only your state is public, not your exact address."
           error={errors.stateId?.message}
@@ -231,10 +254,29 @@ function PhotosSection({ photos }) {
 }
 
 export default function WorkerProfile() {
-  const { data: profile, isLoading, isError, refetch } = useWorkerProfile();
+  const { data: profile, isLoading, isError, error, refetch } = useWorkerProfile();
 
   if (isLoading) return <LoadingSpinner label="Loading your profile..." />;
 
+  // 404 Handling (Profile doesn't exist yet)
+  if (isError && error?.response?.status === 404) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 text-left">
+        <h1 className="text-h2 font-bold text-navy-500">My profile</h1>
+        
+        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-bold text-navy-500 mb-2">Complete Your Profile</h2>
+          <p className="text-gray-500">
+            You haven't set up your profile yet. Fill out the form below to get discovered by employers.
+          </p>
+        </div>
+
+        <DetailsSection profile={{}} />
+      </div>
+    );
+  }
+
+  // General Error Handling
   if (isError || !profile) {
     return <ErrorState message="We could not load your profile." onRetry={refetch} />;
   }
