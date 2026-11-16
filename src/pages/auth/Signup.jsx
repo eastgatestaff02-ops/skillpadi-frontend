@@ -51,8 +51,25 @@ export default function Signup() {
   };
 
   return (
-    <AuthScreen title="Welcome to SkillPadi" subtitle="Create an account to continue.">
+    <AuthScreen>
+      
+      {/* Header with Logo matching the Login page */}
+      <div className="mb-6 flex flex-row items-center justify-center md:justify-start gap-3">
+        <img 
+          src="/logo.jpeg" 
+          alt="SkillPadi Logo" 
+          className="h-10 w-auto object-contain" 
+        />
+        <div className="flex flex-col text-left">
+          <p className="text-h3 font-bold text-navy-500">SkillPadi</p>
+          <p className="text-body2 text-navy-500/70">From Apprentice to Master.</p>
+        </div>
+      </div>
+
       <AuthCard>
+        <h1 className="text-h2 font-bold text-navy-500 mb-1">Welcome to SkillPadi</h1>
+        <p className="text-body2 text-navy-500/70 mb-5">Create an account to continue.</p>
+
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
           <AuthField
             label="Full name"
