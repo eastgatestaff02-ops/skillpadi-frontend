@@ -56,7 +56,7 @@ export default function Signup() {
       {/* Header with Logo matching the Login page */}
       <div className="mb-6 flex flex-row items-center justify-center md:justify-start gap-3">
         <img 
-          src="/logo.jpeg" 
+          src="/logo.png" 
           alt="SkillPadi Logo" 
           className="h-10 w-auto object-contain" 
         />

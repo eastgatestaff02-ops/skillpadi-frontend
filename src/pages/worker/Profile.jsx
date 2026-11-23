@@ -1,13 +1,9 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
 import { Check, Upload, Loader2 } from 'lucide-react';
-import {
-  useWorkerProfile,
-  useUpdateWorkerProfile,
-  useUploadPortfolio,
-} from '@/lib/hooks/useWorker';
+import { useWorkerProfile, useUpdateWorkerProfile } from '@/lib/hooks/useWorker';
 import { apiClient } from '@/lib/api/client';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 import MyReviews from '@/features/worker/MyReviews';
@@ -37,9 +33,6 @@ const getSteps = (profile) => {
 function DetailsSection({ profile }) {
   const updateProfile = useUpdateWorkerProfile();
   const [skillIds, setSkillIds] = useState((profile.skills || []).map((skill) => skill.id));
-  
-  // Track selected state to fetch LGAs dynamically
-  const [selectedStateId, setSelectedStateId] = useState(profile.state?.id || profile.stateId || '');
 
   const {
     register,
@@ -55,38 +48,42 @@ function DetailsSection({ profile }) {
     },
   });
 
-  // Watch the stateId field to update LGAs
   const watchedStateId = watch('stateId');
 
-  // 1. Fetch REAL Trades from Backend
-  const { data: tradesResponse, isLoading: tradesLoading } = useQuery({
+  // 1. Fetch states (with pageSize to get all of them)
+  const { data: statesData, isLoading: statesLoading } = useQuery({
+    queryKey: ['catalog-states'],
+    queryFn: () => apiClient.get('/api/catalog/states?page=1&pageSize=100').then((res) => res.data.data || res.data),
+  });
+
+  // 2. Fetch trades
+  const { data: tradesData, isLoading: tradesLoading } = useQuery({
     queryKey: ['catalog-trades'],
     queryFn: () => apiClient.get('/api/catalog/trades').then((res) => res.data.data || res.data),
   });
 
-  // 2. Fetch REAL States from Backend
-  const { data: statesResponse, isLoading: statesLoading } = useQuery({
-    queryKey: ['catalog-states'],
-    queryFn: () => apiClient.get('/api/catalog/states').then((res) => res.data.data || res.data),
-  });
-
-  // 3. Fetch LGAs based on selected State
-  const { data: lgasResponse, isLoading: lgasLoading } = useQuery({
-    queryKey: ['catalog-lgas', watchedStateId],
-    queryFn: () => apiClient.get(`/api/catalog/lgas?stateId=${watchedStateId}`).then((res) => res.data.data || res.data),
-    enabled: !!watchedStateId, // Only fetch if a state is selected
-  });
-
-  // 4. Fetch REAL Skills from Backend
-  const { data: skillsResponse, isLoading: skillsLoading } = useQuery({
+  // 3. Fetch skills
+  const { data: skillsData, isLoading: skillsLoading } = useQuery({
     queryKey: ['catalog-skills'],
     queryFn: () => apiClient.get('/api/catalog/skills').then((res) => res.data.data || res.data),
   });
 
-  const trades = tradesResponse || [];
-  const states = statesResponse || [];
-  const lgas = lgasResponse || [];
-  const skills = skillsResponse || [];
+  const states = statesData || [];
+  const trades = tradesData || [];
+  const skills = skillsData || [];
+
+  // Find the full state object so we can get the `stateCode` (e.g. 'NG-LA')
+  const selectedState = states.find((s) => s.id === watchedStateId);
+  const stateCode = selectedState?.code || selectedState?.stateCode;
+
+  // 4. Fetch LGAs using `stateCode` instead of `stateId`
+  const { data: lgasData, isLoading: lgasLoading } = useQuery({
+    queryKey: ['catalog-lgas', stateCode],
+    queryFn: () => apiClient.get(`/api/catalog/lgas?stateCode=${stateCode}`).then((res) => res.data.data || res.data),
+    enabled: !!stateCode, // Only fetch if we have a stateCode
+  });
+
+  const lgas = lgasData || [];
 
   const toggleSkill = (id) =>
     setSkillIds((ids) => (ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]));
@@ -97,76 +94,52 @@ function DetailsSection({ profile }) {
       return;
     }
 
+    // Submit the actual UUIDs for state and LGA
     updateProfile.mutate({
       tradeId: values.tradeId,
-      stateId: values.stateId,
-      lgaId: values.lgaId, // Added LGA
+      stateId: values.stateId, // The UUID
+      lgaId: values.lgaId,     // The UUID
       yearsExperience: Number(values.yearsExperience),
-      skillIds, // Now contains real UUIDs
+      skillIds,
     });
   };
 
   return (
     <Card className="p-5">
       <h2 className="text-h3 font-bold text-navy-500">About your work</h2>
-
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 space-y-4">
-        <SelectField
-          label={tradesLoading ? "Loading trades..." : "Trade"}
-          error={errors.tradeId?.message}
-          disabled={tradesLoading}
-          {...register('tradeId', { required: 'Choose your trade.' })}
-        >
+        
+        <SelectField label={tradesLoading ? "Loading..." : "Trade"} error={errors.tradeId?.message} disabled={tradesLoading} {...register('tradeId', { required: 'Required' })}>
           <option value="">Select a trade</option>
-          {trades.map((trade) => (
-            <option key={trade.id} value={trade.id}>{trade.name}</option>
-          ))}
+          {trades.map((trade) => <option key={trade.id} value={trade.id}>{trade.name}</option>)}
         </SelectField>
 
         <TextField
           label="Years of experience"
           type="number"
-          inputMode="numeric"
-          placeholder="e.g. 5"
-          helper="Enter 0 if you are just starting out."
-          error={errors.yearsExperience?.message}
-          {...register('yearsExperience', {
-            required: 'Enter your years of experience.',
-            min: { value: 0, message: 'This cannot be negative.' },
-          })}
+          {...register('yearsExperience', { required: 'Required', min: 0 })}
         />
 
-        <SelectField
-          label={statesLoading ? "Loading states..." : "State"}
-          helper="Only your state is public, not your exact address."
-          error={errors.stateId?.message}
-          disabled={statesLoading}
-          {...register('stateId', { required: 'Choose your state.' })}
-        >
+        <SelectField label={statesLoading ? "Loading..." : "State"} error={errors.stateId?.message} disabled={statesLoading} {...register('stateId', { required: 'Required' })}>
           <option value="">Select your state</option>
-          {states.map((state) => (
-            <option key={state.id} value={state.id}>{state.name}</option>
-          ))}
+          {states.map((state) => <option key={state.id} value={state.id}>{state.name}</option>)}
         </SelectField>
 
-        <SelectField
-          label={lgasLoading ? "Loading LGAs..." : "Local Government Area (LGA)"}
-          error={errors.lgaId?.message}
+        {/* LGA Dropdown - Disabled until State is picked */}
+        <SelectField 
+          label={lgasLoading ? "Loading..." : "Local Government Area (LGA)"}
+          error={errors.lgaId?.message} 
           disabled={!watchedStateId || lgasLoading}
-          {...register('lgaId', { required: 'Choose your LGA.' })}
+          {...register('lgaId', { required: 'Required' })}
         >
           <option value="">Select your LGA</option>
-          {lgas.map((lga) => (
-            <option key={lga.id} value={lga.id}>{lga.name}</option>
-          ))}
+          {lgas.map((lga) => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
         </SelectField>
 
         <div>
-          <p className="mb-1.5 text-caption font-bold text-navy-500">Skills (Select 1-20)</p>
+          <p className="mb-1.5 text-caption font-bold text-navy-500">Skills</p>
           {skillsLoading ? (
              <p className="text-body2 text-navy-500/70">Loading skills...</p>
-          ) : skills.length === 0 ? (
-            <p className="text-body2 text-navy-500/70">Skills are not available right now.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {skills.map((skill) => {
@@ -175,10 +148,9 @@ function DetailsSection({ profile }) {
                   <button
                     key={skill.id}
                     type="button"
-                    aria-pressed={selected}
                     onClick={() => toggleSkill(skill.id)}
-                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-body2 font-medium transition-colors ${
-                      selected ? 'bg-ochre-200 text-navy-500' : 'bg-cream text-navy-500/80 hover:bg-ochre-50'
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-body2 font-medium ${
+                      selected ? 'bg-ochre-200 text-navy-500' : 'bg-cream text-navy-500/80'
                     }`}
                   >
                     {skill.name}
@@ -195,7 +167,6 @@ function DetailsSection({ profile }) {
             {getApiErrorMessage(updateProfile.error, 'Could not save your profile.')}
           </FeedbackBanner>
         )}
-
         {updateProfile.isSuccess && <FeedbackBanner tone="success">Profile saved.</FeedbackBanner>}
 
         <Button type="submit" size="lg" fullWidth loading={updateProfile.isPending} disabled={skillIds.length === 0}>
@@ -208,10 +179,9 @@ function DetailsSection({ profile }) {
 
 function PhotosSection({ photos }) {
   const inputRef = useRef(null);
-  const upload = useUploadPortfolio();
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState('');
-  const busy = preparing || upload.isPending;
+  const [success, setSuccess] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -219,18 +189,37 @@ function PhotosSection({ photos }) {
     if (!file) return;
 
     setError('');
+    setSuccess(false);
     setPreparing(true);
+
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.1,
-        maxWidthOrHeight: 1000,
-        useWebWorker: false,
+      // 1. Compress image
+      const compressed = await imageCompression(file, { maxSizeMB: 0.1, maxWidthOrHeight: 1000, useWebWorker: false });
+      
+      // 2. Get the signed upload URL from backend
+      const { data: urlRes } = await apiClient.post('/api/portfolio/images/upload-url', {
+        fileName: compressed.name,
+        contentType: compressed.type,
       });
-      const formData = new FormData();
-      formData.append('image', compressed, file.name);
-      await upload.mutateAsync(formData);
+      const { uploadUrl, fileKey } = urlRes.data || urlRes;
+
+      // 3. Upload directly to storage using the signed URL
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: compressed,
+        headers: { 'Content-Type': compressed.type },
+      });
+
+      // 4. Finalize with the backend
+      await apiClient.post('/api/portfolio/images/finalize', {
+        fileKey,
+        fileName: compressed.name,
+      });
+
+      setSuccess(true);
+      window.location.reload(); // Reload to show new image
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Upload failed. Check your connection and try again.'));
+      setError(getApiErrorMessage(err, 'Upload failed. Please try again.'));
     } finally {
       setPreparing(false);
     }
@@ -239,44 +228,28 @@ function PhotosSection({ photos }) {
   return (
     <Card className="p-5">
       <h2 className="text-h3 font-bold text-navy-500">Work photos</h2>
-      <p className="mt-1 text-body2 text-navy-500/70">
-        Show employers what you can do. Photos are shrunk to about 100 KB to save your data.
-      </p>
+      <p className="mt-1 text-body2 text-navy-500/70">Show employers what you can do.</p>
 
       <div className="mt-4 grid grid-cols-3 gap-3">
         {photos.map((photo) => (
-          <img
-            key={photo.key}
-            src={photo.url}
-            alt="Your previous work"
-            className="aspect-square w-full rounded-lg object-cover"
-          />
+          <img key={photo.key} src={photo.url} alt="Work" className="aspect-square w-full rounded-lg object-cover" />
         ))}
 
         <button
           type="button"
-          disabled={busy}
+          disabled={preparing}
           onClick={() => inputRef.current?.click()}
-          className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-navy-200 bg-cream text-caption font-medium text-navy-500 hover:bg-ochre-50 disabled:opacity-60"
+          className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-navy-200 bg-cream hover:bg-ochre-50 disabled:opacity-60"
         >
-          {busy ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
-          {busy ? 'Uploading...' : 'Add work photo'}
+          {preparing ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
+          {preparing ? 'Uploading...' : 'Add photo'}
         </button>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFile}
-      />
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
-      {error && (
-        <FeedbackBanner tone="error" className="mt-4">
-          {error}
-        </FeedbackBanner>
-      )}
+      {error && <FeedbackBanner tone="error" className="mt-4">{error}</FeedbackBanner>}
+      {success && <FeedbackBanner tone="success" className="mt-4">Photo uploaded!</FeedbackBanner>}
     </Card>
   );
 }
