@@ -50,19 +50,16 @@ function DetailsSection({ profile }) {
 
   const watchedStateId = watch('stateId');
 
-  // 1. Fetch states (with pageSize to get all of them)
   const { data: statesData, isLoading: statesLoading } = useQuery({
     queryKey: ['catalog-states'],
     queryFn: () => apiClient.get('/api/catalog/states?page=1&pageSize=100').then((res) => res.data.data || res.data),
   });
 
-  // 2. Fetch trades
   const { data: tradesData, isLoading: tradesLoading } = useQuery({
     queryKey: ['catalog-trades'],
     queryFn: () => apiClient.get('/api/catalog/trades').then((res) => res.data.data || res.data),
   });
 
-  // 3. Fetch skills
   const { data: skillsData, isLoading: skillsLoading } = useQuery({
     queryKey: ['catalog-skills'],
     queryFn: () => apiClient.get('/api/catalog/skills').then((res) => res.data.data || res.data),
@@ -72,15 +69,13 @@ function DetailsSection({ profile }) {
   const trades = tradesData || [];
   const skills = skillsData || [];
 
-  // Find the full state object so we can get the `stateCode` (e.g. 'NG-LA')
   const selectedState = states.find((s) => s.id === watchedStateId);
   const stateCode = selectedState?.code || selectedState?.stateCode;
 
-  // 4. Fetch LGAs using `stateCode` instead of `stateId`
   const { data: lgasData, isLoading: lgasLoading } = useQuery({
     queryKey: ['catalog-lgas', stateCode],
     queryFn: () => apiClient.get(`/api/catalog/lgas?stateCode=${stateCode}`).then((res) => res.data.data || res.data),
-    enabled: !!stateCode, // Only fetch if we have a stateCode
+    enabled: !!stateCode, 
   });
 
   const lgas = lgasData || [];
@@ -94,11 +89,10 @@ function DetailsSection({ profile }) {
       return;
     }
 
-    // Submit the actual UUIDs for state and LGA
     updateProfile.mutate({
       tradeId: values.tradeId,
-      stateId: values.stateId, // The UUID
-      lgaId: values.lgaId,     // The UUID
+      stateId: values.stateId, 
+      lgaId: values.lgaId,     
       yearsExperience: Number(values.yearsExperience),
       skillIds,
     });
@@ -125,7 +119,6 @@ function DetailsSection({ profile }) {
           {states.map((state) => <option key={state.id} value={state.id}>{state.name}</option>)}
         </SelectField>
 
-        {/* LGA Dropdown - Disabled until State is picked */}
         <SelectField 
           label={lgasLoading ? "Loading..." : "Local Government Area (LGA)"}
           error={errors.lgaId?.message} 
@@ -194,31 +187,46 @@ function PhotosSection({ photos }) {
 
     try {
       // 1. Compress image
-      const compressed = await imageCompression(file, { maxSizeMB: 0.1, maxWidthOrHeight: 1000, useWebWorker: false });
+      const compressed = await imageCompression(file, { 
+        maxSizeMB: 0.1, 
+        maxWidthOrHeight: 1000, 
+        useWebWorker: false 
+      });
       
-      // 2. Get the signed upload URL from backend
+      // 2. Get the signed upload URL from backend (ONLY sending contentType)
       const { data: urlRes } = await apiClient.post('/api/portfolio/images/upload-url', {
-        fileName: compressed.name,
         contentType: compressed.type,
       });
-      const { uploadUrl, fileKey } = urlRes.data || urlRes;
+      
+      // Extract uploadUrl from the response (adjusting for possible nested data)
+      const uploadUrl = urlRes.data?.uploadUrl || urlRes.uploadUrl;
+      const fileKey = urlRes.data?.fileKey || urlRes.fileKey;
 
-      // 3. Upload directly to storage using the signed URL
-      await fetch(uploadUrl, {
+      if (!uploadUrl) throw new Error('No upload URL returned from server.');
+
+      // 3. Upload directly to Supabase storage using the signed URL
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: compressed,
         headers: { 'Content-Type': compressed.type },
       });
 
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload to Supabase storage.');
+      }
+
       // 4. Finalize with the backend
       await apiClient.post('/api/portfolio/images/finalize', {
-        fileKey,
-        fileName: compressed.name,
+        fileKey: fileKey, 
       });
 
       setSuccess(true);
-      window.location.reload(); // Reload to show new image
+      // Reload the page after 1.5 seconds to show the new image
+      setTimeout(() => window.location.reload(), 1500); 
+      
     } catch (err) {
+      // Log the actual error to console for debugging
+      console.error("Upload Error:", err);
       setError(getApiErrorMessage(err, 'Upload failed. Please try again.'));
     } finally {
       setPreparing(false);
@@ -249,7 +257,7 @@ function PhotosSection({ photos }) {
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
       {error && <FeedbackBanner tone="error" className="mt-4">{error}</FeedbackBanner>}
-      {success && <FeedbackBanner tone="success" className="mt-4">Photo uploaded!</FeedbackBanner>}
+      {success && <FeedbackBanner tone="success" className="mt-4">Photo uploaded successfully!</FeedbackBanner>}
     </Card>
   );
 }
