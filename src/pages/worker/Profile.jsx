@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
-import { Check, Upload, Loader2 } from 'lucide-react';
+import { Check, Upload, Loader2, User } from 'lucide-react';
 import { useWorkerProfile, useUpdateWorkerProfile } from '@/lib/hooks/useWorker';
 import { apiClient } from '@/lib/api/client';
 import { getApiErrorMessage } from '@/lib/utils/errors';
@@ -186,25 +186,21 @@ function PhotosSection({ photos }) {
     setPreparing(true);
 
     try {
-      // 1. Compress image
       const compressed = await imageCompression(file, { 
         maxSizeMB: 0.1, 
         maxWidthOrHeight: 1000, 
         useWebWorker: false 
       });
       
-      // 2. Get the signed upload URL from backend (ONLY sending contentType)
       const { data: urlRes } = await apiClient.post('/api/portfolio/images/upload-url', {
         contentType: compressed.type,
       });
       
-      // Extract uploadUrl from the response (adjusting for possible nested data)
       const uploadUrl = urlRes.data?.uploadUrl || urlRes.uploadUrl;
       const fileKey = urlRes.data?.fileKey || urlRes.fileKey;
 
       if (!uploadUrl) throw new Error('No upload URL returned from server.');
 
-      // 3. Upload directly to Supabase storage using the signed URL
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: compressed,
@@ -215,17 +211,14 @@ function PhotosSection({ photos }) {
         throw new Error('Failed to upload to Supabase storage.');
       }
 
-      // 4. Finalize with the backend
       await apiClient.post('/api/portfolio/images/finalize', {
         fileKey: fileKey, 
       });
 
       setSuccess(true);
-      // Reload the page after 1.5 seconds to show the new image
       setTimeout(() => window.location.reload(), 1500); 
       
     } catch (err) {
-      // Log the actual error to console for debugging
       console.error("Upload Error:", err);
       setError(getApiErrorMessage(err, 'Upload failed. Please try again.'));
     } finally {
@@ -262,6 +255,100 @@ function PhotosSection({ photos }) {
   );
 }
 
+function AvatarSection({ profile }) {
+  const inputRef = useRef(null);
+  const [preparing, setPreparing] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setError('');
+    setPreparing(true);
+
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.2,
+        maxWidthOrHeight: 500,
+        useWebWorker: false,
+      });
+
+      const { data: urlRes } = await apiClient.post('/api/profiles/worker/me/avatar/upload-url', {
+        contentType: compressed.type,
+      });
+      
+      const uploadUrl = urlRes.data?.uploadUrl || urlRes.uploadUrl;
+      const fileKey = urlRes.data?.fileKey || urlRes.fileKey;
+
+      if (!uploadUrl) throw new Error('No upload URL returned from server.');
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: compressed,
+        headers: { 'Content-Type': compressed.type },
+      });
+
+      if (!uploadResponse.ok) throw new Error('Failed to upload to storage.');
+
+      await apiClient.post('/api/profiles/worker/me/avatar/finalize', {
+        fileKey: fileKey,
+      });
+
+      window.location.reload();
+    } catch (err) {
+      console.error("Avatar Upload Error:", err);
+      setError(getApiErrorMessage(err, 'Could not upload photo. Try again.'));
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const avatarUrl = profile?.avatarUrl || profile?.avatar?.url || profile?.imageUrl;
+
+  return (
+    <div className="flex flex-col items-center mb-6">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={preparing}
+        className="relative group h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-ochre-100 flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+      >
+        {preparing ? (
+          <Loader2 size={32} className="animate-spin text-navy-500" />
+        ) : avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="Profile"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <User size={40} className="text-navy-500/50" />
+        )}
+
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Upload size={24} className="text-white" />
+        </div>
+      </button>
+      
+      <p className="mt-2 text-caption text-navy-500/70 font-medium">
+        {preparing ? 'Uploading...' : 'Tap to change photo'}
+      </p>
+
+      {error && <FeedbackBanner tone="error" className="mt-2 text-xs">{error}</FeedbackBanner>}
+    </div>
+  );
+}
+
 export default function WorkerProfile() {
   const { data: profile, isLoading, isError, error, refetch } = useWorkerProfile();
 
@@ -272,6 +359,8 @@ export default function WorkerProfile() {
       <div className="mx-auto max-w-xl space-y-4 text-left">
         <h1 className="text-h2 font-bold text-navy-500">My profile</h1>
         
+        <AvatarSection profile={{}} />
+
         <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-navy-500 mb-2">Complete Your Profile</h2>
           <p className="text-gray-500">
@@ -300,6 +389,8 @@ export default function WorkerProfile() {
   return (
     <div className="mx-auto max-w-xl space-y-4 text-left">
       <h1 className="text-h2 font-bold text-navy-500">My profile</h1>
+
+      <AvatarSection profile={profile} />
 
       <CompletenessCard
         percent={percent}

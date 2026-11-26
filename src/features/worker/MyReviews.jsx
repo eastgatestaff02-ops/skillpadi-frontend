@@ -1,33 +1,16 @@
-import { useWorkerReviews } from '@/lib/hooks/useReviews';
-import ReviewCard from '@/features/trust/ReviewCard';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import ErrorState from '@/components/shared/ErrorState';
+import Card from '@/components/ui/Card';
 
 export default function MyReviews({ workerId }) {
-  const { data: reviews = [], isLoading, isError, refetch } = useWorkerReviews(workerId);
-
-  let content;
-  if (!workerId) return null;
-  if (isLoading) {
-    content = <LoadingSpinner label="Loading reviews..." />;
-  } else if (isError) {
-    content = <ErrorState message="We could not load your reviews." onRetry={refetch} />;
-  } else if (reviews.length === 0) {
-    content = <p className="text-body2 text-navy-500/70">No reviews yet. They will show here after a job.</p>;
-  } else {
-    content = (
-      <div className="space-y-3">
-        {reviews.map((review) => (
-          <ReviewCard key={review.id} review={review} />
-        ))}
-      </div>
-    );
-  }
+  // The backend doesn't have a standalone /reviews endpoint.
+  // Reviews should come attached to the profile object.
+  // For now, we show a placeholder.
 
   return (
-    <section>
-      <h2 className="mb-3 text-h3 font-bold text-navy-500">My reviews</h2>
-      {content}
-    </section>
+    <Card className="p-5 mt-4">
+      <h2 className="text-h3 font-bold text-navy-500 mb-4">My Reviews</h2>
+      <p className="text-sm text-navy-500/70">
+        Your reviews from employers will appear here once you complete jobs.
+      </p>
+    </Card>
   );
 }

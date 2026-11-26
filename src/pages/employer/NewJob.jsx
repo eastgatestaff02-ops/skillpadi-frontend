@@ -27,23 +27,26 @@ export default function NewJob() {
   const [postedJob, setPostedJob] = useState(null);
   const [selectedStateCode, setSelectedStateCode] = useState('');
 
-  // Fetch Trades and States dynamically
-  const { data: trades = [], isLoading: tradesLoading } = useQuery({ 
+  // --- UPDATED CATALOG QUERIES ---
+  const { data: tradesData, isLoading: tradesLoading, isError: tradesError } = useQuery({ 
     queryKey: ['trades'], 
     queryFn: catalogApi.getTrades 
   });
-  
-  const { data: states = [] } = useQuery({ 
+  const trades = Array.isArray(tradesData) ? tradesData : [];
+
+  const { data: statesData, isError: statesError } = useQuery({ 
     queryKey: ['states'], 
     queryFn: catalogApi.getStates 
   });
+  const states = Array.isArray(statesData) ? statesData : [];
 
-  // Fetch LGAs based on the selected state's 'code'
-  const { data: lgas = [] } = useQuery({
+  const { data: lgasData } = useQuery({
     queryKey: ['lgas', selectedStateCode],
     queryFn: () => catalogApi.getLgas(selectedStateCode),
     enabled: !!selectedStateCode,
   });
+  const lgas = Array.isArray(lgasData) ? lgasData : [];
+  // -------------------------------
 
   const {
     register,
@@ -69,7 +72,6 @@ export default function NewJob() {
   });
 
   const onSubmit = (data) => {
-    // Construct the exact payload the backend expects
     const payload = {
       title: data.title.trim(),
       description: data.description.trim(),
@@ -90,6 +92,17 @@ export default function NewJob() {
     setPostedJob(null);
     setSelectedStateCode('');
   };
+
+  // If the catalog fails to load, warn the user instead of showing a broken form
+  if (tradesError || statesError) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <FeedbackBanner tone="error">
+          Could not load the job form. The server might be waking up. Please refresh and try again.
+        </FeedbackBanner>
+      </div>
+    );
+  }
 
   if (postedJob) {
     return (
@@ -150,7 +163,6 @@ export default function NewJob() {
             ))}
           </SelectField>
 
-          {/* State and LGA Grid */}
           <div className="grid grid-cols-2 gap-4">
             <SelectField
               label="State"

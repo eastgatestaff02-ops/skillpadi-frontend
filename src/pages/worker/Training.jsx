@@ -1,55 +1,102 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { BookOpen, Users, Plus } from 'lucide-react';
+import { useAuthStore } from '@/lib/store/authStore';
+import { apiClient } from '@/lib/api/client';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+
 export default function WorkerTraining() {
-  const trainingMaterials = [
-    { id: 1, title: 'Basic Safety Guidelines', type: 'PDF Document', size: '2.4 MB' },
-    { id: 2, title: 'Tool Maintenance 101', type: 'Video', duration: '12 mins' },
-    { id: 3, title: 'Reading Blueprints', type: 'PDF Document', size: '1.8 MB' },
-    { id: 4, title: 'Customer Etiquette', type: 'Slideshow', duration: '5 mins' },
-  ];
+  const { user } = useAuthStore();
+  const isTrainer = user?.roles?.includes('trainer');
+
+  // 1. Fetch Trainer Listings (only if user is a trainer)
+  const { data: listings, isLoading: listingsLoading, isError: listingsError } = useQuery({
+    queryKey: ['trainerListings'],
+    queryFn: () => apiClient.get('/api/training/listings/mine').then(res => res.data.data || res.data),
+    enabled: isTrainer,
+    retry: 1,
+  });
+
+  // 2. Fetch Trainer Profile (only if user is a trainer)
+  const { data: trainerProfile } = useQuery({
+    queryKey: ['trainerProfile'],
+    queryFn: () => apiClient.get('/api/training/trainer/me').then(res => res.data.data || res.data),
+    enabled: isTrainer,
+    retry: 1,
+  });
+
+  // Fallback if the user hasn't been granted the 'trainer' role yet
+  if (!isTrainer) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-navy-500">Trainer Dashboard</h1>
+        <Card className="p-8 text-center">
+          <Users size={48} className="mx-auto text-ochre-500 mb-4" />
+          <h2 className="text-xl font-bold text-navy-500 mb-2">Become a Trainer</h2>
+          <p className="text-navy-500/70 mb-6 max-w-md mx-auto">
+            You are currently registered as a Worker. To train apprentices and create listings, you need to upgrade your account.
+          </p>
+          <Button>Apply to become a Trainer</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const listingArray = Array.isArray(listings) ? listings : [];
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">My Apprentices (Trainer Dashboard)</h1>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-gray-500 mb-4">Your training listings and apprentice applications will appear here.</p>
-          
-          <div className="border border-gray-100 rounded-lg p-4 flex justify-between items-center bg-gray-50">
-            <div>
-              <p className="font-medium text-gray-800">Junior Electrician Apprenticeship</p>
-              <p className="text-sm text-gray-500">6 months • Lagos</p>
-            </div>
-            <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-              Apply
-            </button>
-          </div>
+      
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-500">My Apprentices (Trainer Dashboard)</h1>
+          <p className="text-navy-500/70 mt-1">
+            {trainerProfile?.trade?.name ? `Training in ${trainerProfile.trade.name}` : 'Manage your listings and applicants'}
+          </p>
         </div>
+        <Link to="/worker/training/listings/new">
+          <Button className="bg-ochre-500 hover:bg-ochre-600 text-white border-none flex items-center gap-2">
+            <Plus size={18} /> New Listing
+          </Button>
+        </Link>
       </div>
 
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Training Materials</h2>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            Upload Material
-          </button>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
-          {trainingMaterials.map((material) => (
-            <div key={material.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-              <div>
-                <p className="font-medium text-gray-800">{material.title}</p>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                  <span>{material.type}</span>
-                  <span>•</span>
-                  <span>{material.size || material.duration}</span>
+      {/* Listings Section */}
+      <Card className="p-6">
+        <h2 className="text-xl font-bold mb-4 text-navy-500">My Training Listings</h2>
+        
+        {listingsLoading ? (
+          <LoadingSpinner label="Loading your listings..." />
+        ) : listingsError || listingArray.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
+            <BookOpen size={32} className="mx-auto text-gray-400 mb-3" />
+            <p className="text-navy-500 font-medium">You haven't created any training listings yet.</p>
+            <p className="text-sm text-navy-500/70 mt-1 mb-4">Create a listing to start receiving applications from apprentices.</p>
+            <Link to="/worker/training/listings/new">
+              <Button variant="outlined">Create Your First Listing</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {listingArray.map((listing) => (
+              <div key={listing.id} className="border border-gray-100 rounded-lg p-5 flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white hover:shadow-sm transition">
+                <div>
+                  <p className="font-bold text-navy-500 text-lg">{listing.title || listing.trade?.name || 'Apprenticeship Listing'}</p>
+                  <p className="text-sm text-navy-500/70 mt-1">
+                    {listing.duration || '6 months'} • {listing.location || 'Lagos'}
+                  </p>
                 </div>
+                <Link to={`/worker/training/listings/${listing.id}/applicants`}>
+                  <Button variant="outlined" size="sm">View Applicants</Button>
+                </Link>
               </div>
-              <button className="text-teal-600 hover:text-teal-800 text-sm font-medium">
-                View
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

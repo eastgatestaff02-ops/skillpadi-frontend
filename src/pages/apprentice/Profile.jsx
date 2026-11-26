@@ -1,101 +1,164 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-// Assuming you have an apprenticeApi set up similar to workerApi
 import { apprenticeApi } from '@/lib/api/apprentice'; 
+import { apiClient } from '@/lib/api/client';
+import { getApiErrorMessage } from '@/lib/utils/errors';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import TextField from '@/components/ui/TextField';
 import SelectField from '@/components/ui/SelectField';
 import TextAreaField from '@/components/ui/TextAreaField';
 import Button from '@/components/ui/Button';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
+import Card from '@/components/ui/Card';
 
 export default function ApprenticeProfile() {
+  const queryClient = useQueryClient();
+  const [success, setSuccess] = useState(false);
+
   // 1. Fetch the apprentice profile
-  const { data: profile, isLoading, isError } = useQuery({
+  const { data: profile, isLoading, isError, error } = useQuery({
     queryKey: ['apprenticeProfile'],
     queryFn: () => apprenticeApi.getProfile().then(res => res.data.data || res.data),
-    retry: false, // Don't retry 404s infinitely
+    retry: false, 
   });
 
-  // 2. Setup the form with React Hook Form
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  // 2. Fetch Catalogs (Trades, States, LGAs)
+  const { data: tradesData, isLoading: tradesLoading } = useQuery({
+    queryKey: ['catalog-trades'],
+    queryFn: () => apiClient.get('/api/catalog/trades').then((res) => res.data.data || res.data),
+  });
+
+  const { data: statesData, isLoading: statesLoading } = useQuery({
+    queryKey: ['catalog-states'],
+    queryFn: () => apiClient.get('/api/catalog/states?page=1&pageSize=100').then((res) => res.data.data || res.data),
+  });
+
+  const trades = tradesData || [];
+  const states = statesData || [];
+
+  // 3. Setup the form
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: {
-      tradeInterest: profile?.tradeInterest || '',
-      experienceLevel: profile?.experienceLevel || '',
-      availability: profile?.availability || '',
+      tradeId: profile?.trade?.id || profile?.tradeId || '',
+      stateId: profile?.state?.id || profile?.stateId || '',
+      lgaId: profile?.lga?.id || profile?.lgaId || '',
       bio: profile?.bio || '',
     },
   });
 
-  const onSubmit = (data) => {
-    // Handle the update/create logic here
-    console.log(data);
+  const watchedStateId = watch('stateId');
+  const selectedState = states.find((s) => s.id === watchedStateId);
+  const stateCode = selectedState?.code || selectedState?.stateCode;
+
+  // 4. Fetch LGAs based on selected state
+  const { data: lgasData, isLoading: lgasLoading } = useQuery({
+    queryKey: ['catalog-lgas', stateCode],
+    queryFn: () => apiClient.get(`/api/catalog/lgas?stateCode=${stateCode}`).then((res) => res.data.data || res.data),
+    enabled: !!stateCode, 
+  });
+
+  const lgas = lgasData || [];
+
+  // 5. Setup Mutation to save profile
+  const updateProfile = useMutation({
+    mutationFn: (data) => apprenticeApi.updateProfile(data),
+    onSuccess: () => {
+      setSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ['apprenticeProfile'] });
+      setTimeout(() => setSuccess(false), 3000);
+    },
+  });
+
+  const onSubmit = (values) => {
+    updateProfile.mutate({
+      tradeId: values.tradeId,
+      stateId: values.stateId,
+      lgaId: values.lgaId,
+      bio: values.bio,
+    });
   };
 
-  // 3. Loading State
   if (isLoading) return <LoadingSpinner label="Loading profile..." />;
 
-  // 4. Render Form (Handles both 404 for new users and existing users)
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-sm">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        {isError ? 'Complete Your Apprentice Profile' : 'Update Your Apprentice Profile'}
-      </h1>
-      <p className="text-gray-500 mb-6">
-        {isError 
-          ? "You haven't set up your apprentice profile yet. Tell us what trade you want to learn so trainers can find you." 
-          : "Keep your profile up to date to increase your chances of finding a trainer."}
-      </p>
+    <div className="max-w-2xl mx-auto space-y-4 text-left">
       
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <SelectField
-          label="Trade of Interest"
-          error={errors.tradeInterest?.message}
-          {...register('tradeInterest', { required: 'Select a trade.' })}
-        >
-          <option value="">Select a trade</option>
-          <option value="electrical">Electrical</option>
-          <option value="plumbing">Plumbing</option>
-          <option value="welding">Welding</option>
-          <option value="carpentry">Carpentry</option>
-          <option value="tailoring">Tailoring</option>
-          <option value="hvac">HVAC</option>
-        </SelectField>
+      <div className="mb-6">
+        <h1 className="text-h2 font-bold text-navy-500">
+          {isError && error?.response?.status === 404 ? 'Complete Your Apprentice Profile' : 'Update Your Apprentice Profile'}
+        </h1>
+        <p className="text-navy-500/70 mt-1">
+          {isError && error?.response?.status === 404
+            ? "You haven't set up your apprentice profile yet. Tell us what trade you want to learn so trainers can find you." 
+            : "Keep your profile up to date to increase your chances of finding a trainer."}
+        </p>
+      </div>
 
-        <SelectField
-          label="Experience Level"
-          error={errors.experienceLevel?.message}
-          {...register('experienceLevel', { required: 'Select your experience level.' })}
-        >
-          <option value="">Select experience level</option>
-          <option value="none">No experience (Beginner)</option>
-          <option value="some">Some experience</option>
-          <option value="intermediate">Intermediate</option>
-        </SelectField>
+      <Card className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          
+          <SelectField
+            label={tradesLoading ? "Loading trades..." : "Trade of Interest"}
+            error={errors.tradeId?.message}
+            disabled={tradesLoading}
+            {...register('tradeId', { required: 'Select a trade.' })}
+          >
+            <option value="">Select a trade</option>
+            {trades.map((trade) => (
+              <option key={trade.id} value={trade.id}>{trade.name}</option>
+            ))}
+          </SelectField>
 
-        <SelectField
-          label="Availability"
-          error={errors.availability?.message}
-          {...register('availability', { required: 'Select your availability.' })}
-        >
-          <option value="">Select availability</option>
-          <option value="full_time">Full time</option>
-          <option value="part_time">Part time</option>
-          <option value="weekends">Weekends only</option>
-        </SelectField>
+          <SelectField
+            label={statesLoading ? "Loading states..." : "State"}
+            error={errors.stateId?.message}
+            disabled={statesLoading}
+            {...register('stateId', { required: 'Select your state.' })}
+          >
+            <option value="">Select your state</option>
+            {states.map((state) => (
+              <option key={state.id} value={state.id}>{state.name}</option>
+            ))}
+          </SelectField>
 
-        <TextAreaField
-          label="Short Bio (Optional)"
-          placeholder="Tell trainers a little about yourself and why you want to learn this trade."
-          maxLength={300}
-          {...register('bio')}
-        />
+          <SelectField
+            label={lgasLoading ? "Loading LGAs..." : "Local Government Area (LGA)"}
+            error={errors.lgaId?.message}
+            disabled={!watchedStateId || lgasLoading}
+            {...register('lgaId', { required: 'Select your LGA.' })}
+          >
+            <option value="">Select your LGA</option>
+            {lgas.map((lga) => (
+              <option key={lga.id} value={lga.id}>{lga.name}</option>
+            ))}
+          </SelectField>
 
-        <div className="pt-4">
-          <Button type="submit" fullWidth>
+          <TextAreaField
+            label="Short Bio (Optional)"
+            placeholder="Tell trainers a little about yourself and why you want to learn this trade."
+            maxLength={300}
+            {...register('bio')}
+          />
+
+          {updateProfile.isError && (
+            <FeedbackBanner tone="error">
+              {getApiErrorMessage(updateProfile.error, 'Could not save your profile.')}
+            </FeedbackBanner>
+          )}
+
+          {success && (
+            <FeedbackBanner tone="success">
+              Profile saved successfully!
+            </FeedbackBanner>
+          )}
+
+          <Button type="submit" fullWidth loading={updateProfile.isPending}>
             {isError ? 'Create Profile' : 'Save Profile'}
           </Button>
-        </div>
-      </form>
+
+        </form>
+      </Card>
     </div>
   );
 }
