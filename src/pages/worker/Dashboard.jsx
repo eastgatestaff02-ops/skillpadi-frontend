@@ -1,3 +1,10 @@
+import { useRef, useState } from 'react';
+import imageCompression from 'browser-image-compression';
+import { User, Upload, Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api/client';
+import { getApiErrorMessage } from '@/lib/utils/errors';
+import FeedbackBanner from '@/components/ui/FeedbackBanner';
+
 function AvatarSection({ profile }) {
   const inputRef = useRef(null);
   const [preparing, setPreparing] = useState(false);
@@ -66,6 +73,7 @@ function AvatarSection({ profile }) {
         onChange={handleFile}
       />
       
+      {/* BUTTON OPENING TAG */}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -88,7 +96,8 @@ function AvatarSection({ profile }) {
           <Upload size={24} className="text-white" />
         </div>
       </button>
-      
+      {/* BUTTON CLOSING TAG ADDED HERE */}
+
       <p className="mt-2 text-caption text-navy-500/70 font-medium">
         {preparing ? 'Uploading...' : 'Tap to change photo'}
       </p>
