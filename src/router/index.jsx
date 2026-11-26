@@ -31,7 +31,7 @@ const EmployerDashboard = lazy(() => import('@/pages/employer/Dashboard'));
 const NewJob = lazy(() => import('@/pages/employer/NewJob'));
 const JobDetail = lazy(() => import('@/pages/employer/JobDetail'));
 const SearchWorkers = lazy(() => import('@/pages/employer/SearchWorkers'));
-const EmployerProfile = lazy(() => import('@/pages/employer/Profile')); // ADDED
+const EmployerProfile = lazy(() => import('@/pages/employer/Profile'));
 
 // Apprentice Pages
 const ApprenticeDashboard = lazy(() => import('@/pages/apprentice/Dashboard'));
@@ -109,6 +109,7 @@ export const router = createBrowserRouter([
                 path: '/worker',
                 element: <ProtectedRoute role="worker" />,
                 children: [
+                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
                   { path: 'dashboard', element: <WorkerDashboard /> },
                   { path: 'profile', element: <WorkerProfile /> },
                   { path: 'jobs', element: <JobsSearch /> },
@@ -128,8 +129,9 @@ export const router = createBrowserRouter([
                 path: '/employer',
                 element: <ProtectedRoute role="employer" />,
                 children: [
+                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
                   { path: 'dashboard', element: <EmployerDashboard /> },
-                  { path: 'profile', element: <EmployerProfile /> }, // ADDED
+                  { path: 'profile', element: <EmployerProfile /> },
                   { path: 'jobs/new', element: <NewJob /> },
                   { path: 'jobs/:id', element: <JobDetail /> },
                   { path: 'search', element: <SearchWorkers /> },
@@ -141,8 +143,9 @@ export const router = createBrowserRouter([
                 path: '/apprentice',
                 element: <ProtectedRoute role="apprentice" />,
                 children: [
+                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
                   { path: 'dashboard', element: <ApprenticeDashboard /> },
-                  { path: 'training', element: <ApprenticeListings /> }, // CHANGED
+                  { path: 'training', element: <ApprenticeListings /> },
                   { path: 'listings', element: <ApprenticeListings /> },
                   { path: 'listings/:id/apply', element: <Apply /> },
                   { path: 'applications', element: <MyApplications /> },
