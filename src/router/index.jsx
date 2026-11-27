@@ -104,17 +104,17 @@ export const router = createBrowserRouter([
             ),
             children: [
 
-              // WORKER ROUTES
+              // WORKER & TRAINER ROUTES
               {
                 path: '/worker',
                 element: <ProtectedRoute role="worker" />,
                 children: [
-                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
+                  { path: '', element: <Navigate to="dashboard" replace /> },
                   { path: 'dashboard', element: <WorkerDashboard /> },
                   { path: 'profile', element: <WorkerProfile /> },
                   { path: 'jobs', element: <JobsSearch /> },
                   
-                  // Redirect for sidebar link
+                  // Redirect from the sidebar link
                   { path: 'training', element: <Navigate to="/worker/training/dashboard" replace /> },
                   
                   // Trainer Pages nested under Worker
@@ -129,7 +129,7 @@ export const router = createBrowserRouter([
                 path: '/employer',
                 element: <ProtectedRoute role="employer" />,
                 children: [
-                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
+                  { path: '', element: <Navigate to="dashboard" replace /> },
                   { path: 'dashboard', element: <EmployerDashboard /> },
                   { path: 'profile', element: <EmployerProfile /> },
                   { path: 'jobs/new', element: <NewJob /> },
@@ -143,7 +143,7 @@ export const router = createBrowserRouter([
                 path: '/apprentice',
                 element: <ProtectedRoute role="apprentice" />,
                 children: [
-                  { path: '', element: <Navigate to="dashboard" replace /> }, // <-- ADDED REDIRECT
+                  { path: '', element: <Navigate to="dashboard" replace /> },
                   { path: 'dashboard', element: <ApprenticeDashboard /> },
                   { path: 'training', element: <ApprenticeListings /> },
                   { path: 'listings', element: <ApprenticeListings /> },
