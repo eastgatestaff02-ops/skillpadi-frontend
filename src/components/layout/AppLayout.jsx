@@ -1,21 +1,14 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/lib/store/authStore';
-import {
-  LogOut,
-  Home,
-  User,
-  Briefcase,
-  Search,
-  GraduationCap
-} from 'lucide-react';
+import { LogOut, Home, User, Briefcase, Search, GraduationCap } from 'lucide-react';
 
 export default function AppLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isWorkerOrTrainer =
-    user?.role === 'worker' || user?.role === 'trainer';
+  const isWorkerOrTrainer = user?.role === 'worker' || user?.role === 'trainer';
+  const isApprentice = user?.role === 'apprentice'; // <-- ADDED THIS
 
   const isActive = (path) =>
     location.pathname.includes(path)
@@ -31,115 +24,74 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Top Navigation */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-
-          {/* SkillPadi Logo and Brand Name */}
-          <Link
-            to={dashboardPath}
-            className="flex items-center gap-2"
-          >
-            <img
-              src="/logo.png"
-              alt="SkillPadi Logo"
-              className="h-8 w-8 object-contain"
-            />
-
-            <span className="text-xl md:text-2xl font-bold text-[#0F172A]">
-              SkillPadi
-            </span>
+          <Link to={dashboardPath} className="flex items-center gap-2">
+            <img src="/logo.png" alt="SkillPadi Logo" className="h-8 w-8 object-contain" />
+            <span className="text-xl md:text-2xl font-bold text-[#0F172A]">SkillPadi</span>
           </Link>
 
-          {/* User Information and Logout */}
           <div className="flex items-center gap-4">
-
             <div className="flex items-center gap-2">
-              {/* Added Avatar Icon here */}
               <div className="h-8 w-8 rounded-full bg-ochre-100 flex items-center justify-center border border-navy-100">
                 <User size={16} className="text-navy-500" />
               </div>
-              
               <span className="text-sm font-medium text-gray-600 hidden md:block">
                 {user?.firstName || user?.name || user?.phone || 'User'}
               </span>
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
-            >
-              <LogOut size={18} />
-              Logout
+            <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700">
+              <LogOut size={18} /> Logout
             </button>
-
           </div>
         </div>
       </header>
 
       {/* Main Layout */}
       <div className="max-w-7xl mx-auto flex">
-
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex flex-col w-64 min-h-[calc(100vh-65px)] bg-white border-r p-4">
-
           <nav className="space-y-2">
-
-            <Link
-              to={dashboardPath}
-              className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('dashboard')}`}
-            >
-              <Home size={20} />
-              Dashboard
+            <Link to={dashboardPath} className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('dashboard')}`}>
+              <Home size={20} /> Dashboard
             </Link>
 
-            {isWorkerOrTrainer ? (
+            {isWorkerOrTrainer && (
               <>
-                <Link
-                  to="/worker/profile"
-                  className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/profile')}`}
-                >
-                  <User size={20} />
-                  My Profile
+                <Link to="/worker/profile" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/profile')}`}>
+                  <User size={20} /> My Profile
                 </Link>
-
-                <Link
-                  to="/worker/jobs"
-                  className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/jobs')}`}
-                >
-                  <Briefcase size={20} />
-                  Find Jobs
+                <Link to="/worker/jobs" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/jobs')}`}>
+                  <Briefcase size={20} /> Find Jobs
                 </Link>
-
-                <Link
-                  to="/worker/training"
-                  className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/training')}`}
-                >
-                  <GraduationCap size={20} />
-                  My Apprentices
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/employer/search"
-                  className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/employer/search')}`}
-                >
-                  <Search size={20} />
-                  Find Workers
-                </Link>
-
-                <Link
-                  to="/employer/jobs/create"
-                  className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/employer/jobs/create')}`}
-                >
-                  <Briefcase size={20} />
-                  Post a Job
+                <Link to="/worker/training" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/worker/training')}`}>
+                  <GraduationCap size={20} /> My Apprentices
                 </Link>
               </>
             )}
 
+            {isApprentice && (
+              <>
+                <Link to="/apprentice/listings" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/apprentice/listings')}`}>
+                  <Search size={20} /> Find Trainers
+                </Link>
+                <Link to="/apprentice/applications" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/apprentice/applications')}`}>
+                  <Briefcase size={20} /> My Applications
+                </Link>
+              </>
+            )}
+
+            {!isWorkerOrTrainer && !isApprentice && (
+              <>
+                <Link to="/employer/search" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/employer/search')}`}>
+                  <Search size={20} /> Find Workers
+                </Link>
+                <Link to="/employer/jobs/create" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive('/employer/jobs/create')}`}>
+                  <Briefcase size={20} /> Post a Job
+                </Link>
+              </>
+            )}
           </nav>
         </aside>
 
@@ -147,71 +99,52 @@ export default function AppLayout() {
         <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
           <Outlet />
         </main>
-
       </div>
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-
         <div className="flex justify-around items-center py-3">
-
-          <Link
-            to={dashboardPath}
-            className={`flex flex-col items-center text-xs gap-1 ${isActive('dashboard')}`}
-          >
-            <Home size={20} />
-            Home
+          <Link to={dashboardPath} className={`flex flex-col items-center text-xs gap-1 ${isActive('dashboard')}`}>
+            <Home size={20} /> Home
           </Link>
 
-          {isWorkerOrTrainer ? (
+          {isWorkerOrTrainer && (
             <>
-              <Link
-                to="/worker/jobs"
-                className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/jobs')}`}
-              >
-                <Briefcase size={20} />
-                Jobs
+              <Link to="/worker/jobs" className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/jobs')}`}>
+                <Briefcase size={20} /> Jobs
               </Link>
-
-              <Link
-                to="/worker/training"
-                className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/training')}`}
-              >
-                <GraduationCap size={20} />
-                Train
+              <Link to="/worker/training" className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/training')}`}>
+                <GraduationCap size={20} /> Train
               </Link>
-
-              <Link
-                to="/worker/profile"
-                className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/profile')}`}
-              >
-                <User size={20} />
-                Profile
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/employer/search"
-                className={`flex flex-col items-center text-xs gap-1 ${isActive('/employer/search')}`}
-              >
-                <Search size={20} />
-                Search
-              </Link>
-
-              <Link
-                to="/employer/jobs/create"
-                className={`flex flex-col items-center text-xs gap-1 ${isActive('/employer/jobs/create')}`}
-              >
-                <Briefcase size={20} />
-                Post
+              <Link to="/worker/profile" className={`flex flex-col items-center text-xs gap-1 ${isActive('/worker/profile')}`}>
+                <User size={20} /> Profile
               </Link>
             </>
           )}
 
+          {isApprentice && (
+            <>
+              <Link to="/apprentice/listings" className={`flex flex-col items-center text-xs gap-1 ${isActive('/apprentice/listings')}`}>
+                <Search size={20} /> Search
+              </Link>
+              <Link to="/apprentice/applications" className={`flex flex-col items-center text-xs gap-1 ${isActive('/apprentice/applications')}`}>
+                <Briefcase size={20} /> Apps
+              </Link>
+            </>
+          )}
+
+          {!isWorkerOrTrainer && !isApprentice && (
+            <>
+              <Link to="/employer/search" className={`flex flex-col items-center text-xs gap-1 ${isActive('/employer/search')}`}>
+                <Search size={20} /> Search
+              </Link>
+              <Link to="/employer/jobs/create" className={`flex flex-col items-center text-xs gap-1 ${isActive('/employer/jobs/create')}`}>
+                <Briefcase size={20} /> Post
+              </Link>
+            </>
+          )}
         </div>
       </nav>
-
     </div>
   );
 }

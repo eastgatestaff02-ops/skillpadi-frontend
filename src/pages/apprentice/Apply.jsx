@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { User, Phone, MapPin, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { useListing } from '@/lib/hooks/useListings';
-import { useApply } from '@/lib/hooks/useApplications';
+import { trainingApi } from '@/lib/api/training';
+import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/store/authStore';
 import { AVAILABILITY_OPTIONS } from '@/lib/utils/constants';
 import { normalizeNigerianPhone } from '@/lib/utils/phone';
@@ -22,9 +23,22 @@ export default function Apply() {
   const user = useAuthStore((s) => s.user);
   const [submitted, setSubmitted] = useState(false);
 
-  const { data, isLoading, isError, refetch } = useListing(id);
-  const listing = data?.data ?? data;
-  const apply = useApply();
+  // FIX: Fetch all listings, then find the one with the matching ID
+  const { data: listing, isLoading, isError, refetch } = useQuery({
+    queryKey: ['listing', id],
+    queryFn: async () => {
+      const res = await trainingApi.getListings();
+      const allListings = res.data?.data || res.data || [];
+      const found = allListings.find(l => l.id === id);
+      if (!found) throw new Error('Listing not found');
+      return found;
+    },
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: (data) => apiClient.post(`/api/training/listings/${id}/applications`, data),
+    onSuccess: () => setSubmitted(true),
+  });
 
   const {
     register,
@@ -41,17 +55,13 @@ export default function Apply() {
   });
 
   const onSubmit = (values) => {
-    apply.mutate(
-      {
-        listingId: id,
-        fullName: values.fullName.trim(),
-        phone: normalizeNigerianPhone(values.phone),
-        location: values.location.trim(),
-        whyInterested: values.whyInterested.trim(),
-        availability: values.availability,
-      },
-      { onSuccess: () => setSubmitted(true) }
-    );
+    applyMutation.mutate({
+      fullName: values.fullName.trim(),
+      phone: normalizeNigerianPhone(values.phone),
+      location: values.location.trim(),
+      whyInterested: values.whyInterested.trim(),
+      availability: values.availability,
+    });
   };
 
   if (isLoading) return <LoadingSpinner label="Loading apprenticeship..." />;
@@ -161,13 +171,13 @@ export default function Apply() {
             ))}
           </SelectField>
 
-          {apply.isError && (
+          {applyMutation.isError && (
             <FeedbackBanner tone="error">
-              {getApiErrorMessage(apply.error, 'Could not send your application. Please try again.')}
+              {getApiErrorMessage(applyMutation.error, 'Could not send your application. Please try again.')}
             </FeedbackBanner>
           )}
 
-          <Button type="submit" size="lg" fullWidth loading={apply.isPending}>
+          <Button type="submit" size="lg" fullWidth loading={applyMutation.isPending}>
             Submit application
           </Button>
         </form>

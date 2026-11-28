@@ -1,3 +1,4 @@
+
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
@@ -103,7 +104,6 @@ export const router = createBrowserRouter([
               </Suspense>
             ),
             children: [
-
               // WORKER & TRAINER ROUTES
               {
                 path: '/worker',
@@ -113,11 +113,10 @@ export const router = createBrowserRouter([
                   { path: 'dashboard', element: <WorkerDashboard /> },
                   { path: 'profile', element: <WorkerProfile /> },
                   { path: 'jobs', element: <JobsSearch /> },
-                  
-                  // Redirect from the sidebar link
-                  { path: 'training', element: <Navigate to="/worker/training/dashboard" replace /> },
-                  
-                  // Trainer Pages nested under Worker
+                  {
+                    path: 'training',
+                    element: <Navigate to="/worker/training/dashboard" replace />,
+                  },
                   { path: 'training/dashboard', element: <TrainerDashboard /> },
                   { path: 'training/profile', element: <TrainerProfile /> },
                   { path: 'training/listings/new', element: <CreateListing /> },
@@ -133,6 +132,7 @@ export const router = createBrowserRouter([
                   { path: 'dashboard', element: <EmployerDashboard /> },
                   { path: 'profile', element: <EmployerProfile /> },
                   { path: 'jobs/new', element: <NewJob /> },
+                  { path: 'jobs/create', element: <NewJob /> },
                   { path: 'jobs/:id', element: <JobDetail /> },
                   { path: 'search', element: <SearchWorkers /> },
                 ],
@@ -145,13 +145,11 @@ export const router = createBrowserRouter([
                 children: [
                   { path: '', element: <Navigate to="dashboard" replace /> },
                   { path: 'dashboard', element: <ApprenticeDashboard /> },
-                  { path: 'training', element: <ApprenticeListings /> },
                   { path: 'listings', element: <ApprenticeListings /> },
                   { path: 'listings/:id/apply', element: <Apply /> },
                   { path: 'applications', element: <MyApplications /> },
                 ],
               },
-
             ],
           },
         ],

@@ -8,45 +8,44 @@ import { jobsApi } from '@/lib/api/jobs';
 import { catalogApi } from '@/lib/api/catalog';
 import { getApiErrorMessage } from '@/lib/utils/errors';
 
-// Dev B's custom components
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import TextField from '@/components/ui/TextField';
 import TextAreaField from '@/components/ui/TextAreaField';
 import SelectField from '@/components/ui/SelectField';
 import FeedbackBanner from '@/components/ui/FeedbackBanner';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
 const FIELDS = ['title', 'description', 'tradeId', 'stateId', 'lgaId', 'urgency', 'budget'];
-
-function NairaIcon({ className = '' }) {
-  return <span className={`w-[18px] text-center text-body1 font-bold ${className}`}>₦</span>;
-}
 
 export default function NewJob() {
   const navigate = useNavigate();
   const [postedJob, setPostedJob] = useState(null);
   const [selectedStateCode, setSelectedStateCode] = useState('');
 
-  // --- UPDATED CATALOG QUERIES ---
+  // 1. Fetch Trades (With error handling)
   const { data: tradesData, isLoading: tradesLoading, isError: tradesError } = useQuery({ 
     queryKey: ['trades'], 
-    queryFn: catalogApi.getTrades 
+    queryFn: catalogApi.getTrades,
+    retry: 1,
   });
   const trades = Array.isArray(tradesData) ? tradesData : [];
 
+  // 2. Fetch States (With error handling)
   const { data: statesData, isError: statesError } = useQuery({ 
     queryKey: ['states'], 
-    queryFn: catalogApi.getStates 
+    queryFn: catalogApi.getStates,
+    retry: 1,
   });
   const states = Array.isArray(statesData) ? statesData : [];
 
+  // 3. Fetch LGAs based on stateCode
   const { data: lgasData } = useQuery({
     queryKey: ['lgas', selectedStateCode],
     queryFn: () => catalogApi.getLgas(selectedStateCode),
     enabled: !!selectedStateCode,
   });
   const lgas = Array.isArray(lgasData) ? lgasData : [];
-  // -------------------------------
 
   const {
     register,
@@ -84,21 +83,12 @@ export default function NewJob() {
     createMutation.mutate(payload);
   };
 
-  const showBanner = createMutation.isError;
-
-  const handlePostAnother = () => {
-    reset();
-    createMutation.reset();
-    setPostedJob(null);
-    setSelectedStateCode('');
-  };
-
-  // If the catalog fails to load, warn the user instead of showing a broken form
+  // Show a clean error if the catalog fails to load (e.g., token expired)
   if (tradesError || statesError) {
     return (
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl mt-10">
         <FeedbackBanner tone="error">
-          Could not load the job form. The server might be waking up. Please refresh and try again.
+          Could not load the job form. Your session may have expired. Please log out, log back in, and try again.
         </FeedbackBanner>
       </div>
     );
@@ -116,7 +106,7 @@ export default function NewJob() {
             {postedJob.title} is now open for workers to see.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button variant="outlined" fullWidth onClick={handlePostAnother}>
+            <Button variant="outlined" fullWidth onClick={() => { reset(); setPostedJob(null); }}>
               Post another job
             </Button>
             <Button fullWidth onClick={() => navigate('/employer/dashboard')}>
@@ -132,24 +122,24 @@ export default function NewJob() {
     <div className="mx-auto max-w-xl text-left">
       <Card className="p-6">
         <h1 className="text-h2 font-bold text-navy-500">Post a job</h1>
-        <p className="mt-1 text-body2 text-navy-500/70">
+        <p className="mt-1 text-body2 text-navy-500/70 mb-6">
           Describe the work clearly so the right worker can respond.
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <TextField
             label="Job title"
             icon={Briefcase}
             placeholder="e.g. Repair shop wiring"
             error={errors.title?.message}
-            {...register('title', { required: 'Add a clear job title.', minLength: { value: 5, message: 'Job title must be at least 5 characters.' } })}
+            {...register('title', { required: 'Add a clear job title.', minLength: { value: 5, message: 'Must be at least 5 characters.' } })}
           />
 
           <TextAreaField
             label="Description"
             placeholder="Describe the work you need done"
             error={errors.description?.message}
-            {...register('description', { required: 'Describe the work you need done.', minLength: { value: 10, message: 'Description must be at least 10 characters.' } })}
+            {...register('description', { required: 'Describe the work.', minLength: { value: 10, message: 'Must be at least 10 characters.' } })}
           />
 
           <SelectField
@@ -203,14 +193,13 @@ export default function NewJob() {
 
           <TextField
             label="Budget (₦) - Optional"
-            icon={NairaIcon}
             type="number"
             placeholder="e.g. 45000"
             error={errors.budget?.message}
             {...register('budget')}
           />
 
-          {showBanner && (
+          {createMutation.isError && (
             <FeedbackBanner tone="error">
               {getApiErrorMessage(createMutation.error, 'Could not post the job. Please try again.')}
             </FeedbackBanner>

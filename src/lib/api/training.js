@@ -3,13 +3,13 @@ import { apiClient } from './client';
 export const trainingApi = {
   // Trainer Profile
   getTrainerProfile: () => apiClient.get('/api/training/trainer/me'),
-  
-  // THIS IS THE MISSING FUNCTION:
   createOrUpdateTrainerProfile: (data) => apiClient.put('/api/training/trainer/me', data),
 
-  // Trainer Listings
-  getMyListings: () => apiClient.get('/api/training/listings/mine'),
+  // Listings (Corrected)
+  getListings: (params) => apiClient.get('/api/training/listings', { params }),
+  getListing: (id) => apiClient.get(`/api/training/listings/${id}`), // <--- THE FIX
   createListing: (data) => apiClient.post('/api/training/listings', data),
+  getMyListings: () => apiClient.get('/api/training/listings/mine'),
   
   // Applicants
   getApplicantsForListing: (listingId) => 

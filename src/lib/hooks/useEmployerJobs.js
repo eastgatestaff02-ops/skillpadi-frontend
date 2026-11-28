@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { employerApi } from '@/lib/api/employer';
 import { jobsApi } from '@/lib/api/jobs';
 import { queryDefaults, mutationDefaults } from '@/lib/utils/network';
 
@@ -8,7 +7,7 @@ const unwrap = (res) => res.data?.data ?? res.data;
 export const useMyJobs = () =>
   useQuery({
     queryKey: ['myJobs'],
-    queryFn: () => employerApi.getMyJobs().then((res) => res.data),
+    queryFn: () => jobsApi.getMyJobs().then(unwrap), // This now calls GET /api/jobs/mine
     ...queryDefaults,
   });
 
